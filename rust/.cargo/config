@@ -1,0 +1,11 @@
+# `cargo build` fails because it cannot find the correct linker for android targets
+# The correct building and linking is handled by blue_jni
+# Only here for to get IntelliSence for cfg(target_os = "android")
+[build]
+target = [
+    "x86_64-linux-android",
+    "i686-linux-android",
+    "aarch64-linux-android",
+    "armv7-linux-androideabi",
+    "x86_64-unknown-linux-gnu",
+    ]

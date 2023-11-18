@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "blue_jni",
+    "util",
+]
+resolver = "2"
