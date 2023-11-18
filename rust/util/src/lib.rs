@@ -1,11 +1,21 @@
+use std::env;
 use std::fs::File;
 use std::io::{ErrorKind, Write};
 use std::path::PathBuf;
 use std::process::Command;
 use std::{fs, io};
 
+pub fn current_dir() -> PathBuf {
+    match env::current_dir() {
+        Ok(current_dir) => current_dir,
+        Err(err) => {
+            panic!("Could get current directory: {:?}", err);
+        }
+    }
+}
+
 pub fn create_dir(path: &PathBuf) {
-    fs::create_dir(&path).unwrap_or_else(|error| match error.kind() {
+    fs::create_dir_all(&path).unwrap_or_else(|error| match error.kind() {
         ErrorKind::AlreadyExists => {}
         _ => panic!("Could not create directory: {}", error),
     });

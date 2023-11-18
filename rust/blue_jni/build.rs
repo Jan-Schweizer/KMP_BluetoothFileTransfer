@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 /// See https://github.com/android10/Rust-Cross-Platform-Development/blob/main/rust-library/cryptor_jni/build.rs for more info
 use std::collections::HashMap;
 use std::env;
@@ -90,12 +91,7 @@ fn android_targets<'a>() -> AndroidTargets<'a> {
 }
 
 fn create_cargo_config_file() -> File {
-    let current_dir = match env::current_dir() {
-        Ok(current_dir) => current_dir,
-        Err(err) => {
-            panic!("Could get current directory: {:?}", err);
-        }
-    };
+    let current_dir = util::current_dir();
     let config_dir_path = current_dir.join(CARGO_CONFIG_DIR_NAME);
     util::create_dir(&config_dir_path);
 
