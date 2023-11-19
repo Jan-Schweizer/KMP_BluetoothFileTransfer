@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 use std::path::MAIN_SEPARATOR_STR;
 
 use phf::phf_map;
@@ -32,32 +33,29 @@ fn toolchain_dir() -> String {
         _ => "linux-x86_64",
     };
 
-    let mut toolchain_dir = env::var("ANDROID_HOME").expect("ANDROID_HOME should be set!");
-    toolchain_dir.push_str(MAIN_SEPARATOR_STR);
-    toolchain_dir.push_str("ndk");
-    toolchain_dir.push_str(MAIN_SEPARATOR_STR);
-    toolchain_dir.push_str(ANDROID_NDK_VERSION);
-    toolchain_dir.push_str(MAIN_SEPARATOR_STR);
-    toolchain_dir.push_str("toolchains");
-    toolchain_dir.push_str(MAIN_SEPARATOR_STR);
-    toolchain_dir.push_str("llvm");
-    toolchain_dir.push_str(MAIN_SEPARATOR_STR);
-    toolchain_dir.push_str("prebuilt");
-    toolchain_dir.push_str(MAIN_SEPARATOR_STR);
-    toolchain_dir.push_str(host_tag);
-    toolchain_dir.push_str(MAIN_SEPARATOR_STR);
-    toolchain_dir.push_str("bin");
-    toolchain_dir.push_str(MAIN_SEPARATOR_STR);
+    let toolchain_dir = PathBuf::new()
+        .join(env::var("ANDROID_HOME").expect("ANDROID_HOME should be set!"))
+        .join("ndk")
+        .join(ANDROID_NDK_VERSION)
+        .join("toolchains")
+        .join("llvm")
+        .join("prebuilt")
+        .join(host_tag)
+        .join("bin");
 
     toolchain_dir
+        .as_os_str()
+        .to_str()
+        .expect("Creating a path should not fail")
+        .to_string()
 }
 
 fn archiver_path() -> String {
-    format!("{}llvm-ar", toolchain_dir())
+    format!("{}{}llvm-ar", toolchain_dir(), MAIN_SEPARATOR_STR)
 }
 
 fn linker_path(linker_exe: &str) -> String {
-    format!("{}{}", toolchain_dir(), linker_exe)
+    format!("{}{}{}", toolchain_dir(), MAIN_SEPARATOR_STR, linker_exe)
 }
 
 #[derive(Serialize)]

@@ -1,10 +1,27 @@
 #[cfg(target_os = "android")]
 #[allow(non_snake_case)]
 pub mod android {
-    extern crate jni;
+    use android_logger::Config;
+    use log::{info, LevelFilter};
+
+    use jni;
+
     use self::jni::objects::{JClass, JString};
     use self::jni::sys::jstring;
     use self::jni::JNIEnv;
+
+    #[no_mangle]
+    pub extern "system" fn Java_de_schweizer_bft_BlueManager_initLogger<'local>(
+        mut _env: JNIEnv<'local>,
+        _class: JString<'local>,
+    ) {
+        android_logger::init_once(
+            Config::default()
+                .with_max_level(LevelFilter::Trace)
+                .with_tag("App"),
+        );
+        info!("Android Logger initialized");
+    }
 
     #[no_mangle]
     pub extern "system" fn Java_de_schweizer_bft_BlueManager_discover<'local>(
@@ -12,7 +29,7 @@ pub mod android {
         _class: JClass<'local>,
         input: JString<'local>,
     ) -> jstring {
-        println!("Where is this printed to?");
+        info!("BlueManager::discover()");
         let input: String = env
             .get_string(&input)
             .expect("Couldn't get java string!")
