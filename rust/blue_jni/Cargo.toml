@@ -10,6 +10,9 @@ build = "build.rs"
 jni = { version = "0.21.1", default-features = false }
 android_logger = "0.13"
 
+[target.'cfg(target_os="linux")'.dependencies]
+jni = { version = "0.21.1", default-features = false }
+
 # Dynamic Library: https://doc.rust-lang.org/reference/linkage.html
 [lib]
 crate-type = ["staticlib", "cdylib"]
