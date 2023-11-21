@@ -24,6 +24,10 @@ pub static ANDROID_TARGET_ABI_CONFIG: phf::Map<&'static str, (&'static str, &'st
     "x86_64-linux-android" => ("x86_64-linux-android21-clang", "x86_64"),
 };
 
+pub static DESKTOP_TARGET_ABI_CONIG: phf::Map<&'static str, &'static str> = phf_map!(
+    "x86_64-unknown-linux-gnu" => "linux-x86_64",
+);
+
 // E.g /home/jan/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin
 fn toolchain_dir() -> String {
     let host_tag = match env::consts::OS {
@@ -88,6 +92,29 @@ fn android_targets<'a>() -> AndroidTargets<'a> {
     android_targets
 }
 
+#[derive(Serialize)]
+struct DesktopTargets<'a> {
+    #[serde(rename(serialize = "target"))]
+    targets: HashMap<&'a str, DesktopTargetConfig>,
+}
+
+#[derive(Serialize)]
+struct DesktopTargetConfig {}
+
+fn desktop_targets<'a>() -> DesktopTargets<'a> {
+    let mut desktop_targets = DesktopTargets {
+        targets: HashMap::with_capacity(DESKTOP_TARGET_ABI_CONIG.len()),
+    };
+
+    for target in DESKTOP_TARGET_ABI_CONIG.keys() {
+        desktop_targets
+            .targets
+            .insert(target, DesktopTargetConfig {});
+    }
+
+    desktop_targets
+}
+
 fn create_cargo_config_file() -> File {
     let current_dir = util::current_dir();
     let config_dir_path = current_dir.join(CARGO_CONFIG_DIR_NAME);
@@ -97,18 +124,37 @@ fn create_cargo_config_file() -> File {
     util::create_file(&config_file_path)
 }
 
-fn create_android_targets_config_file() {
+fn create_targets_config_file() {
+    let mut config_file = create_cargo_config_file();
+
     let android_targets = android_targets();
     let toml = toml::to_string(&android_targets)
-        .expect("Serializing android targets to toml shouldn't fail!");
-    let mut config_file = create_cargo_config_file();
+        .expect("Serializing Android targets to toml should not fail!");
     match config_file.write_all(toml.as_bytes()) {
-        Ok(_) => println!("Successfully wrote cargo configuration file."),
-        Err(err) => panic!("Couldn't write cargo configuration file: {}", err),
+        Ok(_) => println!("Successfully wrote Android targets to cargo configuration file."),
+        Err(err) => panic!(
+            "Couldn't write Android targets to cargo configuration file: {}",
+            err
+        ),
+    }
+
+    config_file
+        .write(b"\n")
+        .expect("Writting newline should not fail");
+
+    let desktop_targets = desktop_targets();
+    let toml = toml::to_string(&desktop_targets)
+        .expect("Serializing Desktop targets to toml should not fail!");
+    match config_file.write_all(toml.as_bytes()) {
+        Ok(_) => println!("Successfully wrote Desktop targets to cargo configuration file."),
+        Err(err) => panic!(
+            "Couldn't write Desktop targets to cargo configuration file: {}",
+            err
+        ),
     }
 }
 
-fn add_android_targets_to_toolchain() {
+fn add_targets_to_toolchain() {
     let mut command_conf = CommandConfig {
         command: "rustup",
         args: vec!["target", "add"],
@@ -117,12 +163,15 @@ fn add_android_targets_to_toolchain() {
     for target in ANDROID_TARGET_ABI_CONFIG.keys() {
         command_conf.args.push(target);
     }
+    for target in DESKTOP_TARGET_ABI_CONIG.keys() {
+        command_conf.args.push(target);
+    }
     run_command(&command_conf);
 }
 
 fn main() {
     println!("cargo:rerun-if-changed=src/build.rs");
 
-    create_android_targets_config_file();
-    add_android_targets_to_toolchain();
+    create_targets_config_file();
+    add_targets_to_toolchain();
 }

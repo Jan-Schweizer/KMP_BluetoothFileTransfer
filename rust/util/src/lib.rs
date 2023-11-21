@@ -25,6 +25,18 @@ pub fn create_file(file: &Path) -> File {
     File::create(&file).expect("Could not create file")
 }
 
+pub fn copy_file(from: &Path, to: &Path) {
+    println!("Coying\nFrom: {:?}\nTo: {:?}", from, to);
+
+    match fs::copy(from, to) {
+        Ok(_) => {}
+        Err(err) => panic!(
+            "Copying from: {:?} - to: {:?} failed with err: {}",
+            from, to, err
+        ),
+    }
+}
+
 pub struct CommandConfig<'a> {
     pub command: &'a str,
     pub args: Vec<&'a str>,

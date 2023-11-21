@@ -12,7 +12,7 @@ pub mod android {
     #[no_mangle]
     pub extern "system" fn Java_de_schweizer_bft_BlueManager_initLogger<'local>(
         mut _env: JNIEnv<'local>,
-        _class: JString<'local>,
+        _class: JClass<'local>,
     ) {
         android_logger::init_once(
             Config::default()
