@@ -5,7 +5,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import co.touchlab.kermit.Logger
 import de.schweizer.bft.BlueManager
-import view.DeviceDiscoveryScreen
+import de.schweizer.bft.view.DeviceDiscoveryScreen
 import java.nio.file.Paths
 
 fun main() = application {

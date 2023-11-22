@@ -8,7 +8,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import co.touchlab.kermit.Logger
-import view.DeviceDiscoveryScreen
+import de.schweizer.bft.view.DeviceDiscoveryScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

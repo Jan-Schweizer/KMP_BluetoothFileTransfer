@@ -1,4 +1,4 @@
-package view
+package de.schweizer.bft.view
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
