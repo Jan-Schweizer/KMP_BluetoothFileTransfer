@@ -30,8 +30,10 @@ kotlin {
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
+            implementation(libs.kotlin.coroutines.swing)
         }
         commonMain.dependencies {
+            implementation(libs.kotlin.coroutines.core)
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material)

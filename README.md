@@ -9,3 +9,8 @@ This is a Kotlin Multiplatform project targeting Android, Desktop.
 
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+
+# Resources
+- [Rust cross-platform... The Android part...](https://fernandocejas.com/blog/engineering/2023-07-27-rust-cross-platform-android/)
+- [Building and Deploying a Rust library on Android](https://mozilla.github.io/firefox-browser-architecture/experiments/2017-09-21-rust-on-android.html)
+- [navigation-for-compose-for-desktop](https://github.com/itheamc/navigation-for-compose-for-desktop)

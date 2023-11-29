@@ -16,6 +16,7 @@ androidx-espresso-core = "3.5.1"
 androidx-fragmentKtx = "1.6.2"
 kermit = "2.0.2"
 kotlin = "1.9.20"
+kotlin-coroutines = "1.7.3"
 junit = "4.13.2"
 
 [libraries]
@@ -23,6 +24,8 @@ kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlin-coroutines"}
+kotlin-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlin-coroutines" }
 
 # ----- Compose -----
 compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
