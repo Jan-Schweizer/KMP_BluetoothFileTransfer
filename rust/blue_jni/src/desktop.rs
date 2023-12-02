@@ -1,15 +1,16 @@
 #[allow(non_snake_case)]
 mod desktop {
-    use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter};
-    use btleplug::platform::Manager;
+    use bluer::{AdapterEvent, DeviceEvent, DiscoveryFilter, Session};
     use env_logger::Env;
-    use jni::objects::JValue;
+    use futures::{pin_mut, stream::SelectAll, StreamExt};
     use log::info;
     use tokio::runtime::Runtime;
+    use tokio::time::{sleep, Duration};
 
     use self::jni::objects::JClass;
     use self::jni::JNIEnv;
     use jni;
+    use jni::objects::JValue;
 
     #[no_mangle]
     pub extern "system" fn Java_de_schweizer_bft_BlueManager_initLogger<'local>(
@@ -31,50 +32,80 @@ mod desktop {
         let mut devices: Vec<String> = Vec::new();
 
         let block = async {
-            let manager = Manager::new()
+            let session = Session::new()
                 .await
-                .expect("Creating a btleplug Manager should not fail");
-
-            let adapters = manager
-                .adapters()
+                .expect("Creating bluer Session should not fail");
+            let adapter = session
+                .default_adapter()
                 .await
-                .expect("Getting adapters should not fail");
+                .expect("Creating bluer Adapter should not fail");
+            info!(
+                "Discovering devices using Bluetooth adapter {}\n",
+                adapter.name()
+            );
+            adapter
+                .set_powered(true)
+                .await
+                .expect("Turning on bluetooth should not fail");
+            let filter = DiscoveryFilter {
+                transport: bluer::DiscoveryTransport::BrEdr,
+                ..Default::default()
+            };
+            adapter
+                .set_discovery_filter(filter)
+                .await
+                .expect("Setting bluer discovery filter should not fail");
+            info!(
+                "Using discovery filter:\n{:#?}\n\n",
+                adapter.discovery_filter().await
+            );
 
-            if adapters.is_empty() {
-                info!("No Bluetooth adapters!");
-            } else {
-                for adapter in &adapters {
-                    info!("adapter: {:?}", adapter);
-                }
-            }
+            let device_events = adapter
+                .discover_devices()
+                .await
+                .expect("Discovering devices should not fail");
+            pin_mut!(device_events);
 
-            let central = adapters
-                .first()
-                .expect("At least one Adapter should be available");
-            info!("adapter info: {}", central.adapter_info().await.unwrap());
+            let mut all_change_events = SelectAll::new();
 
-            let _ = central.start_scan(ScanFilter::default()).await;
+            loop {
+                tokio::select! {
+                    Some(device_event) = device_events.next() => {
+                            match device_event {
+                                AdapterEvent::DeviceAdded(addr) => {
+                                    let device = adapter.device(addr).expect("Getting device should not fail");
+                                    let device_name = device.name().await.expect("Getting device name should not fail").unwrap_or(addr.to_string());
+                                    info!("Device ({}) with address: {} added", device_name, addr);
+                                    devices.push(device_name);
 
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-
-            let peripherals = central.peripherals().await.unwrap();
-            if peripherals.is_empty() {
-                info!("No Peripherals found");
-            } else {
-                for p in &peripherals {
-                    if let Some(name) = p.properties().await.unwrap().unwrap().local_name {
-                        info!("peripheral: {}", name);
-                        devices.push(name)
+                                    let change_event = device.events().await.expect("Getting events from device should not fail").map(move |event| (addr, event));
+                                    all_change_events.push(change_event);
+                                }
+                                AdapterEvent::DeviceRemoved(addr) => {
+                                    info!("Device removed: {addr}");
+                                }
+                                _ => (),
+                            }
+                    }
+                    Some((addr, DeviceEvent::PropertyChanged(prop))) = all_change_events.next() => {
+                        info!("Device changed: {}", addr);
+                        info!("    {:?}", prop);
+                    }
+                    _ = sleep(Duration::from_secs(12)) => {
+                        info!("Timeout reached, ending discovery");
+                        break;
+                    }
+                    else => {
+                        info!("tokio::select! => else");
+                        break;
                     }
                 }
             }
-
-            let _ = central.stop_scan().await;
         };
 
         let tokio_rt = Runtime::new().expect("Creating Tokio Runtime should not fail");
         let handle = tokio_rt.handle();
-        let _adapters = handle.block_on(block);
+        handle.block_on(block);
 
         let class = env.find_class("java/lang/String").unwrap();
         let initial = env.new_string("").unwrap();

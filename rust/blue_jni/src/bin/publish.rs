@@ -33,16 +33,17 @@ fn publish_jni_libs_to_project() {
         .expect("Current directory should have a parent!");
     let rust_target_dir = project_dir.join("rust").join("target");
 
-    for target in build::ANDROID_TARGET_ABI_CONFIG.keys() {
-        let kmp_target_dir = build::ANDROID_TARGET_ABI_CONFIG
-            .get(target)
-            .expect(format!("Target: {} not available", target).as_str())
-            .1;
-        let crate_lib_file = crate_lib_file(&rust_target_dir, target);
-        let jni_libs_file = jni_libs_file(project_dir, kmp_target_dir, "androidMain");
+    // Currently, Android Bluetooth is not handled natively but directly in Kotlin/Android
+    // for target in build::ANDROID_TARGET_ABI_CONFIG.keys() {
+    //     let kmp_target_dir = build::ANDROID_TARGET_ABI_CONFIG
+    //         .get(target)
+    //         .expect(format!("Target: {} not available", target).as_str())
+    //         .1;
+    //     let crate_lib_file = crate_lib_file(&rust_target_dir, target);
+    //     let jni_libs_file = jni_libs_file(project_dir, kmp_target_dir, "androidMain");
 
-        util::copy_file(&crate_lib_file, &jni_libs_file)
-    }
+    //     util::copy_file(&crate_lib_file, &jni_libs_file)
+    // }
 
     for target in build::DESKTOP_TARGET_ABI_CONIG.keys() {
         let kmp_target_dir = build::DESKTOP_TARGET_ABI_CONIG
