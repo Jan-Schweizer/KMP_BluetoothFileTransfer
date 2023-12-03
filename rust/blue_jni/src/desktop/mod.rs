@@ -1,6 +1,8 @@
 use bluer::{DiscoveryFilter, Session};
 use lazy_static::lazy_static;
 use log::info;
+use std::collections::HashMap;
+use std::sync::{Mutex, MutexGuard};
 use tokio::runtime::{Handle, Runtime};
 
 use crate::desktop::blue_manager::BlueManager;
@@ -17,7 +19,7 @@ fn rt_handle() -> Handle {
 }
 
 lazy_static! {
-    static ref BLUETOOTH_MANAGER: BlueManager = {
+    static ref BLUETOOTH_MANAGER: Mutex<BlueManager> = {
         let handle = rt_handle();
         let block = async {
             let session = Session::new()
@@ -48,13 +50,14 @@ lazy_static! {
         };
         let (session, adapter) = handle.block_on(block);
 
-        BlueManager {
+        Mutex::new(BlueManager {
             session: session,
             adapter: adapter,
-        }
+            device_addrs: HashMap::new(),
+        })
     };
 }
 
-fn bt_manager() -> &'static BlueManager {
-    &BLUETOOTH_MANAGER
+fn bt_manager() -> MutexGuard<'static, BlueManager> {
+    BLUETOOTH_MANAGER.lock().unwrap()
 }

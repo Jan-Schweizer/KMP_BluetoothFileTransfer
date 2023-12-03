@@ -1,4 +1,7 @@
-import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,7 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.toLowerCase
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -76,7 +80,7 @@ fun Discover(viewModel: DeviceDiscoveryViewModel) {
         } else if (discoveredDevices.isNotEmpty()) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 for (device in state.discoveredDevices) {
-                    Text(text = device)
+                    BluetoothDevice(device, viewModel)
                     Spacer(modifier = Modifier.requiredHeight(16.dp))
                 }
             }
@@ -85,8 +89,15 @@ fun Discover(viewModel: DeviceDiscoveryViewModel) {
     }
 }
 
-@Preview
 @Composable
-fun AppDesktopPreview() {
-    App()
+fun BluetoothDevice(name: String, viewModel: DeviceDiscoveryViewModel) {
+    Box(
+        modifier = Modifier
+            .border(BorderStroke(2.dp, Color.Red))
+            .clickable(role = Role.Button) {
+                viewModel.connectToDevice(name)
+            },
+    ) {
+        Text(name);
+    }
 }

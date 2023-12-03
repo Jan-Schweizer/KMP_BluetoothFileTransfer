@@ -33,6 +33,12 @@ class DeviceDiscoveryViewModel {
         Logger.i { "Error: $error" }
         _uiState.update { DeviceDiscoveryState(isLoading = false, error = null, discoveredDevices = emptyArray()) }
     }
+
+    fun connectToDevice(name: String) {
+        scope.launch {
+            blueManager.connectToDevice(name)
+        }
+    }
 }
 
 data class DeviceDiscoveryState(
