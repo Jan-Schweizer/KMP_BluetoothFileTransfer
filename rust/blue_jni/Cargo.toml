@@ -27,6 +27,7 @@ log = "0.4"
 bluer = { version = "0.16", features = ["full"] }
 tokio = { version = "1.34", features = ["rt-multi-thread", "time"] }
 futures = { version = "0.3", features = ["std"] }
+lazy_static = "1.4"
 
 [build-dependencies]
 phf = { version = "0.11.1", features = ["macros"] }

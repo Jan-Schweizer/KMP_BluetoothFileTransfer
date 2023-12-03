@@ -11,13 +11,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.toLowerCase
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import co.touchlab.kermit.Logger
+import de.schweizer.bft.Logger as MyLogger
+import de.schweizer.bft.LogLevel
 import de.schweizer.bft.ui.DeviceDiscoveryViewModel
 import de.schweizer.bft.view.DeviceDiscoveryScreen
 import java.nio.file.Paths
+
+private fun init() {
+    loadLibraries()
+
+    MyLogger.init(LogLevel.INFO.name)
+}
 
 @Suppress("UnsafeDynamicallyLoadedCode")
 private fun loadLibraries() {
@@ -30,11 +39,11 @@ private fun loadLibraries() {
 fun main() = application {
     Window(onCloseRequest = ::exitApplication) {
 
-        loadLibraries()
+        init()
 
-        // TODO: move into Discover() and see if Logger init gets called with each recomposition
         val viewModel = remember { DeviceDiscoveryViewModel() }
         Discover(viewModel)
+
 
 //        DeviceDiscoveryScreen()
     }
