@@ -28,7 +28,7 @@ kotlin {
             implementation(libs.androidx.fragmentKtx)
             implementation(libs.compose.navigation)
 //            implementation(libs.jni.utils)
-            implementation(files("src/androidMain/libs/droidplug-release.aar"))
+//            implementation(files("src/androidMain/libs/droidplug-release.aar"))
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)

@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -62,9 +63,14 @@ fun Discover(viewModel: DeviceDiscoveryViewModel) {
         modifier = Modifier.fillMaxSize(),
     ) {
         Button(onClick = {
-            viewModel.discoverDevices()
+            if (state.isLoading) {
+                viewModel.cancelDiscovery()
+            } else {
+                viewModel.discoverDevices()
+            }
         }) {
-            Text(text = "Discover")
+            val text = if (state.isLoading) "Cancel Discovery" else "Discover"
+            Text(text)
         }
 
         Spacer(modifier = Modifier.requiredHeight(16.dp))
@@ -73,15 +79,20 @@ fun Discover(viewModel: DeviceDiscoveryViewModel) {
             Text("Discovering Devices ...")
         }
 
+        Spacer(modifier = Modifier.requiredHeight(16.dp))
+
         val error = state.error
         val discoveredDevices = state.discoveredDevices
         if (error != null) {
             Text(error)
         } else if (discoveredDevices.isNotEmpty()) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                for (device in state.discoveredDevices) {
-                    BluetoothDevice(device, viewModel)
-                    Spacer(modifier = Modifier.requiredHeight(16.dp))
+                discoveredDevices.forEach { device ->
+                    // TODO: Make key device addr
+                    key(device) {
+                        BluetoothDevice(device, viewModel)
+                        Spacer(modifier = Modifier.requiredHeight(16.dp))
+                    }
                 }
             }
         }

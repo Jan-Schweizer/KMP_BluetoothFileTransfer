@@ -51,7 +51,7 @@ lazy_static! {
         let (session, adapter) = handle.block_on(block);
 
         Mutex::new(BlueManager {
-            session: session,
+            _session: session,
             adapter: adapter,
             device_addrs: HashMap::new(),
         })
