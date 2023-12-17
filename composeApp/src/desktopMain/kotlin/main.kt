@@ -87,26 +87,24 @@ fun Discover(viewModel: DeviceDiscoveryViewModel) {
             Text(error)
         } else if (discoveredDevices.isNotEmpty()) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                discoveredDevices.forEach { device ->
-                    // TODO: Make key device addr
-                    key(device) {
-                        BluetoothDevice(device, viewModel)
+                discoveredDevices.forEach { (addr, name) ->
+                    key(addr) {
+                        BluetoothDevice(name, addr, viewModel)
                         Spacer(modifier = Modifier.requiredHeight(16.dp))
                     }
                 }
             }
         }
-
     }
 }
 
 @Composable
-fun BluetoothDevice(name: String, viewModel: DeviceDiscoveryViewModel) {
+fun BluetoothDevice(name: String, addr: String, viewModel: DeviceDiscoveryViewModel) {
     Box(
         modifier = Modifier
             .border(BorderStroke(2.dp, Color.Red))
             .clickable(role = Role.Button) {
-                viewModel.connectToDevice(name)
+                viewModel.connectToDevice(addr)
             },
     ) {
         Text(name);

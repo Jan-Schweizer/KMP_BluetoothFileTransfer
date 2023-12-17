@@ -19,7 +19,7 @@ class DeviceDiscoveryViewModel {
     val uiState = _uiState.asStateFlow()
 
     fun discoverDevices() {
-        _uiState.update { DeviceDiscoveryState(isLoading = true, error = null, discoveredDevices = emptyList()) }
+        _uiState.update { DeviceDiscoveryState(isLoading = true, error = null, discoveredDevices = LinkedHashMap()) }
         scope.launch {
             blueManager.discover(this@DeviceDiscoveryViewModel)
         }
@@ -32,11 +32,11 @@ class DeviceDiscoveryViewModel {
         }
     }
 
-    private fun onDeviceDiscovered(discoveredDevice: String) {
-        val discoveredDevices = uiState.value.discoveredDevices
-        if (discoveredDevice in discoveredDevices) return
+    private fun onDeviceDiscovered(discoveredDevice: String, deviceMacAddr: String) {
+        val discoveredDevices = LinkedHashMap(uiState.value.discoveredDevices)
+        discoveredDevices[deviceMacAddr] = discoveredDevice
 
-        _uiState.update { uiState.value.copy(discoveredDevices = discoveredDevices + discoveredDevice) }
+        _uiState.update { uiState.value.copy(discoveredDevices = discoveredDevices) }
     }
 
     private fun onDiscoveryStopped() {
@@ -45,7 +45,7 @@ class DeviceDiscoveryViewModel {
 
     private fun errorHandler(error: String) {
         Logger.i { "Error: $error" }
-        _uiState.update { uiState.value.copy(isLoading = false, error = error, discoveredDevices = emptyList()) }
+        _uiState.update { uiState.value.copy(isLoading = false, error = error, discoveredDevices = LinkedHashMap()) }
     }
 
     fun connectToDevice(name: String) {
@@ -58,5 +58,5 @@ class DeviceDiscoveryViewModel {
 data class DeviceDiscoveryState(
     val isLoading: Boolean = false,
     val error: String? = null,
-    val discoveredDevices: List<String> = emptyList(),
+    val discoveredDevices: LinkedHashMap<String, String> = LinkedHashMap(),
 )

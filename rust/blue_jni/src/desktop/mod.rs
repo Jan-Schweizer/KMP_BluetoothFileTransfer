@@ -1,7 +1,6 @@
 use bluer::{DiscoveryFilter, Session};
 use lazy_static::lazy_static;
 use log::info;
-use std::collections::HashMap;
 use std::sync::{Mutex, MutexGuard};
 use tokio::runtime::{Handle, Runtime};
 
@@ -53,7 +52,6 @@ lazy_static! {
         Mutex::new(BlueManager {
             _session: session,
             adapter: adapter,
-            device_addrs: HashMap::new(),
         })
     };
 }

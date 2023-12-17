@@ -1,7 +1,8 @@
+use std::str::FromStr;
+
 use bluer::{Adapter, AdapterEvent, Address, DeviceEvent, Session};
 use futures::{pin_mut, stream::SelectAll, StreamExt};
 use log::info;
-use std::collections::HashMap;
 use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
 
@@ -15,7 +16,6 @@ use super::{bt_manager, rt_handle};
 pub(crate) struct BlueManager {
     pub(crate) _session: Session,
     pub(crate) adapter: Adapter,
-    pub(crate) device_addrs: HashMap<String, Address>,
 }
 
 #[no_mangle]
@@ -40,8 +40,7 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_discover<'local>(
 }
 
 async fn discover_devices<'local>(mut env: JNIEnv<'local>, view_model_class: JClass<'local>) {
-    let mut manager = bt_manager();
-    manager.device_addrs.clear();
+    let manager = bt_manager();
 
     manager
         .adapter
@@ -69,10 +68,10 @@ async fn discover_devices<'local>(mut env: JNIEnv<'local>, view_model_class: JCl
                         AdapterEvent::DeviceAdded(addr) => {
                             let device = manager.adapter.device(addr).expect("Getting device should not fail");
                             let device_name = device.name().await.expect("Getting device name should not fail").unwrap_or(addr.to_string());
-                            info!("Device ({}) with address: {} added", device_name, addr);
+                            let addr_str = addr.to_string();
+                            info!("Device ({}) with address: {} added", device_name, addr_str);
 
-                            device_discovered(&mut env, &view_model_class, &device_name);
-                            manager.device_addrs.insert(device_name, device.address());
+                            device_discovered(&mut env, &view_model_class, &device_name, &addr_str);
 
                             let change_event = device.events().await.expect("Getting events from device should not fail").map(move |event| (addr, event));
                             all_change_events.push(change_event);
@@ -104,21 +103,19 @@ async fn discover_devices<'local>(mut env: JNIEnv<'local>, view_model_class: JCl
 pub extern "system" fn Java_de_schweizer_bft_BlueManager_connectToDevice<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
-    device_name: JString<'local>,
+    device_addr: JString<'local>,
 ) {
-    let device_name: String = env
-        .get_string(&device_name)
+    let manager = bt_manager();
+
+    let device_addr: String = env
+        .get_string(&device_addr)
         .expect("Getting String from env should not fail")
         .into();
+    let device_addr = Address::from_str(&device_addr).unwrap();
 
-    let manager = bt_manager();
-    let device_addr = manager
-        .device_addrs
-        .get(&device_name)
-        .expect("Device should still be available");
     let device = manager
         .adapter
-        .device(*device_addr)
+        .device(device_addr)
         .expect("Device should still be available from adapter");
 
     let block = async {
@@ -149,13 +146,16 @@ fn device_discovered<'local>(
     env: &mut JNIEnv<'local>,
     view_model_class: &JClass<'local>,
     device: &str,
+    addr: &str,
 ) {
-    let arg = env.new_string(&device).unwrap();
+    let device_name = env.new_string(&device).unwrap();
+    let device_addr = env.new_string(&addr).unwrap();
+
     let _ = env.call_method(
         view_model_class,
         "onDeviceDiscovered",
-        "(Ljava/lang/String;)V",
-        &[JValue::from(&arg)],
+        "(Ljava/lang/String;Ljava/lang/String;)V",
+        &[JValue::from(&device_name), JValue::from(&device_addr)],
     );
 }
 
