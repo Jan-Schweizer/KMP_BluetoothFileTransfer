@@ -6,13 +6,14 @@ use log::info;
 use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
 
-use self::jni::objects::JClass;
-use self::jni::JNIEnv;
-use jni::objects::JValue;
-use jni::{self, objects::JString};
+use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
+use jni::{Executor, JNIEnv};
+
+use crate::desktop::GLOBAL_JVM;
 
 use super::{bt_manager, rt_handle};
 
+#[derive(Clone, Debug)]
 pub(crate) struct BlueManager {
     pub(crate) _session: Session,
     pub(crate) adapter: Adapter,
@@ -24,22 +25,24 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_init<'local>(
     _class: JClass<'local>,
 ) {
     info!("Initializing BluetoothManager");
-    drop(bt_manager());
+    drop(bt_manager().clone());
 }
 
 #[no_mangle]
 pub extern "system" fn Java_de_schweizer_bft_BlueManager_discover<'local>(
     env: JNIEnv<'local>,
     _class: JClass<'local>,
-    view_model_class: JClass<'local>,
+    view_model: JObject<'local>,
 ) {
     info!("BlueManager::discover()");
 
+    let view_model = env.new_global_ref(view_model).unwrap();
+
     let handle = rt_handle();
-    handle.block_on(discover_devices(env, view_model_class));
+    handle.spawn(discover_devices(view_model));
 }
 
-async fn discover_devices<'local>(mut env: JNIEnv<'local>, view_model_class: JClass<'local>) {
+async fn discover_devices(view_model: GlobalRef) {
     let manager = bt_manager();
 
     manager
@@ -60,6 +63,7 @@ async fn discover_devices<'local>(mut env: JNIEnv<'local>, view_model_class: JCl
     let (tx, mut rx) = mpsc::channel(1);
     let duration = Duration::from_secs(12);
     tokio::spawn(sleep_for(duration, tx));
+    // TODO: init cancel channel
 
     loop {
         tokio::select! {
@@ -71,7 +75,7 @@ async fn discover_devices<'local>(mut env: JNIEnv<'local>, view_model_class: JCl
                             let addr_str = addr.to_string();
                             info!("Device ({}) with address: {} added", device_name, addr_str);
 
-                            device_discovered(&mut env, &view_model_class, &device_name, &addr_str);
+                            device_discovered(view_model.clone(), &device_name, &addr_str);
 
                             let change_event = device.events().await.expect("Getting events from device should not fail").map(move |event| (addr, event));
                             all_change_events.push(change_event);
@@ -88,7 +92,7 @@ async fn discover_devices<'local>(mut env: JNIEnv<'local>, view_model_class: JCl
             }
             _ = rx.recv() => {
                 info!("Timeout reached, ending discovery");
-                discovery_stopped(&mut env, &view_model_class);
+                discovery_stopped(view_model.clone());
                 break;
             }
             else => {
@@ -107,6 +111,7 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_connectToDevice<'local>
 ) {
     let manager = bt_manager();
 
+    // TODO: Use executor
     let device_addr: String = env
         .get_string(&device_addr)
         .expect("Getting String from env should not fail")
@@ -142,23 +147,28 @@ async fn sleep_for(duration: Duration, tx: mpsc::Sender<()>) {
     let _ = tx.send(());
 }
 
-fn device_discovered<'local>(
-    env: &mut JNIEnv<'local>,
-    view_model_class: &JClass<'local>,
-    device: &str,
-    addr: &str,
-) {
-    let device_name = env.new_string(&device).unwrap();
-    let device_addr = env.new_string(&addr).unwrap();
+fn device_discovered(view_model: GlobalRef, device: &str, addr: &str) {
+    let exec = Executor::new(GLOBAL_JVM.get().unwrap().clone());
+    let _ = exec.with_attached(|env| {
+        let device_name = env.new_string(&device).unwrap();
+        let device_addr = env.new_string(&addr).unwrap();
 
-    let _ = env.call_method(
-        view_model_class,
-        "onDeviceDiscovered",
-        "(Ljava/lang/String;Ljava/lang/String;)V",
-        &[JValue::from(&device_name), JValue::from(&device_addr)],
-    );
+        env.call_method(
+            view_model.as_obj(),
+            "onDeviceDiscovered",
+            "(Ljava/lang/String;Ljava/lang/String;)V",
+            &[JValue::from(&device_name), JValue::from(&device_addr)],
+        )
+        .unwrap()
+        .v()
+    });
 }
 
-fn discovery_stopped<'local>(env: &mut JNIEnv<'local>, view_model_class: &JClass<'local>) {
-    let _ = env.call_method(view_model_class, "onDiscoveryStopped", "()V", &[]);
+fn discovery_stopped(view_model: GlobalRef) {
+    let exec = Executor::new(GLOBAL_JVM.get().unwrap().clone());
+    let _ = exec.with_attached(|env| {
+        env.call_method(view_model.as_obj(), "onDiscoveryStopped", "()V", &[])
+            .unwrap()
+            .v()
+    });
 }

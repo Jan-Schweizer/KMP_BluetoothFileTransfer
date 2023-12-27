@@ -9,10 +9,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
-class DeviceDiscoveryViewModel {
-    // TODO: How to cancel on destroy?
-    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+class DeviceDiscoveryViewModel : CoroutineScope {
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Default + SupervisorJob()
+
     private val blueManager = BlueManager()
 
     private val _uiState = MutableStateFlow(DeviceDiscoveryState())
@@ -20,14 +22,14 @@ class DeviceDiscoveryViewModel {
 
     fun discoverDevices() {
         _uiState.update { DeviceDiscoveryState(isLoading = true, error = null, discoveredDevices = LinkedHashMap()) }
-        scope.launch {
+        launch {
             blueManager.discover(this@DeviceDiscoveryViewModel)
         }
     }
 
     fun cancelDiscovery() {
         _uiState.update { uiState.value.copy(isLoading = false, error = null) }
-        scope.launch {
+        launch {
             blueManager.cancelDiscovery()
         }
     }
@@ -49,7 +51,7 @@ class DeviceDiscoveryViewModel {
     }
 
     fun connectToDevice(name: String) {
-        scope.launch {
+        launch {
             blueManager.connectToDevice(name)
         }
     }

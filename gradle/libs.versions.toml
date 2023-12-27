@@ -18,7 +18,6 @@ kermit = "2.0.2"
 kotlin = "1.9.20"
 kotlin-coroutines = "1.7.3"
 junit = "4.13.2"
-jni-utils = "0.1.1"
 
 [libraries]
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
@@ -27,7 +26,6 @@ kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlin-coroutines"}
 kotlin-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlin-coroutines" }
-jni-utils = { module = "com.github.deviceplug:jni-utils-rs", version.ref = "jni-utils" }
 
 # ----- Compose -----
 compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
@@ -35,7 +33,7 @@ compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = 
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
 compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "compose" }
 compose-material = { module = "androidx.compose.material:material", version.ref = "compose" }
-compose-navigation = "androidx.navigation:navigation-compose:2.7.5"
+compose-navigation = "androidx.navigation:navigation-compose:2.7.6"
 
 # ----- AndroidX -----
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }
