@@ -28,7 +28,6 @@ class DeviceDiscoveryViewModel : CoroutineScope {
     }
 
     fun cancelDiscovery() {
-        _uiState.update { uiState.value.copy(isLoading = false, error = null) }
         launch {
             blueManager.cancelDiscovery()
         }

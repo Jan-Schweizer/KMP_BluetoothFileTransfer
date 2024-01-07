@@ -25,25 +25,7 @@ import java.nio.file.Paths
 
 class Application {
 
-    init {
-        loadLibraries()
-
-        init()
-        Logger.init(LogLevel.INFO.name)
-
-    }
-
     private val viewModel = DeviceDiscoveryViewModel()
-
-    private external fun init()
-
-    @Suppress("UnsafeDynamicallyLoadedCode")
-    private fun loadLibraries() {
-        co.touchlab.kermit.Logger.i { "Loading libraries" }
-        val nativeLibraryPath =
-            Paths.get(System.getProperty("user.dir"), "src", "desktopMain", "jniLibs", "linux-x86_64", "libblue_jni.so")
-        System.load("$nativeLibraryPath")
-    }
 
     @Composable
     fun Discover() {
@@ -99,6 +81,33 @@ class Application {
                 },
         ) {
             Text(name);
+        }
+    }
+
+    companion object {
+        @Suppress("UnsafeDynamicallyLoadedCode")
+        private fun loadLibraries() {
+            co.touchlab.kermit.Logger.i { "Loading libraries" }
+            val nativeLibraryPath =
+                Paths.get(
+                    System.getProperty("user.dir"),
+                    "src",
+                    "desktopMain",
+                    "jniLibs",
+                    "linux-x86_64",
+                    "libblue_jni.so"
+                )
+            System.load("$nativeLibraryPath")
+        }
+
+        @JvmStatic
+        private external fun init()
+
+        init {
+            loadLibraries()
+
+            init()
+            Logger.init(LogLevel.INFO.name)
         }
     }
 }

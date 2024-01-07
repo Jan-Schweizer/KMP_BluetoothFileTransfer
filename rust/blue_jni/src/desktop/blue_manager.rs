@@ -2,11 +2,12 @@ use std::str::FromStr;
 
 use bluer::{Adapter, AdapterEvent, Address, DeviceEvent, Session};
 use futures::{pin_mut, stream::SelectAll, StreamExt};
+use lazy_static::lazy_static;
 use log::info;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Mutex};
 use tokio::time::{sleep, Duration};
 
-use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
+use jni::objects::{GlobalRef, JObject, JString, JValue};
 use jni::{Executor, JNIEnv};
 
 use crate::desktop::GLOBAL_JVM;
@@ -19,10 +20,36 @@ pub(crate) struct BlueManager {
     pub(crate) adapter: Adapter,
 }
 
+#[derive(Debug)]
+struct BlueState {
+    timeout: Option<mpsc::Sender<()>>,
+    cancel: Option<mpsc::Sender<()>>,
+}
+
+impl BlueState {
+    fn new(timeout: mpsc::Sender<()>, cancel: mpsc::Sender<()>) -> Self {
+        Self {
+            timeout: Some(timeout),
+            cancel: Some(cancel),
+        }
+    }
+
+    fn reset() -> Self {
+        Self {
+            timeout: None,
+            cancel: None,
+        }
+    }
+}
+
+lazy_static! {
+    static ref BLUE_STATE: Mutex<BlueState> = Mutex::new(BlueState::reset());
+}
+
 #[no_mangle]
 pub extern "system" fn Java_de_schweizer_bft_BlueManager_init<'local>(
     _env: JNIEnv<'local>,
-    _class: JClass<'local>,
+    _obj: JObject<'local>,
 ) {
     info!("Initializing BluetoothManager");
     drop(bt_manager().clone());
@@ -31,15 +58,14 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_init<'local>(
 #[no_mangle]
 pub extern "system" fn Java_de_schweizer_bft_BlueManager_discover<'local>(
     env: JNIEnv<'local>,
-    _class: JClass<'local>,
+    _obj: JObject<'local>,
     view_model: JObject<'local>,
 ) {
     info!("BlueManager::discover()");
 
     let view_model = env.new_global_ref(view_model).unwrap();
 
-    let handle = rt_handle();
-    handle.spawn(discover_devices(view_model));
+    rt_handle().spawn(discover_devices(view_model));
 }
 
 async fn discover_devices(view_model: GlobalRef) {
@@ -60,10 +86,12 @@ async fn discover_devices(view_model: GlobalRef) {
 
     let mut all_change_events = SelectAll::new();
 
-    let (tx, mut rx) = mpsc::channel(1);
+    let (timeout_tx, mut timeout_rx) = mpsc::channel(1);
+    let (cancel_tx, mut cancel_rx) = mpsc::channel(1);
+    *BLUE_STATE.lock().await = BlueState::new(timeout_tx, cancel_tx);
+
     let duration = Duration::from_secs(12);
-    tokio::spawn(sleep_for(duration, tx));
-    // TODO: init cancel channel
+    let timeout_task = tokio::spawn(sleep_and_notify(duration));
 
     loop {
         tokio::select! {
@@ -90,9 +118,15 @@ async fn discover_devices(view_model: GlobalRef) {
                 info!("Device changed: {}", addr);
                 info!("    {:?}", prop);
             }
-            _ = rx.recv() => {
+            Some(()) = timeout_rx.recv() => {
                 info!("Timeout reached, ending discovery");
-                discovery_stopped(view_model.clone());
+                discovery_stopped(view_model.clone()).await;
+                break;
+            }
+            Some(()) = cancel_rx.recv() => {
+                info!("Canceling Discovery");
+                discovery_stopped(view_model.clone()).await;
+                timeout_task.abort();
                 break;
             }
             else => {
@@ -106,7 +140,7 @@ async fn discover_devices(view_model: GlobalRef) {
 #[no_mangle]
 pub extern "system" fn Java_de_schweizer_bft_BlueManager_connectToDevice<'local>(
     mut env: JNIEnv<'local>,
-    _class: JClass<'local>,
+    _obj: JObject<'local>,
     device_addr: JString<'local>,
 ) {
     let manager = bt_manager();
@@ -137,14 +171,24 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_connectToDevice<'local>
 #[no_mangle]
 pub extern "system" fn Java_de_schweizer_bft_BlueManager_cancelDiscovery<'local>(
     _env: JNIEnv<'local>,
-    _class: JClass<'local>,
+    _obj: JObject<'local>,
 ) {
-    info!("Cancellation not yet implemented");
+    rt_handle().spawn(async {
+        let state = BLUE_STATE.lock().await;
+        if let Some(cancel) = &state.cancel {
+            let _ = cancel.send(()).await;
+        }
+    });
 }
 
-async fn sleep_for(duration: Duration, tx: mpsc::Sender<()>) {
+async fn sleep_and_notify(duration: Duration) {
     sleep(duration).await;
-    let _ = tx.send(());
+
+    let state = BLUE_STATE.lock().await;
+
+    if let Some(timeout) = &state.timeout {
+        let _ = timeout.send(()).await;
+    }
 }
 
 fn device_discovered(view_model: GlobalRef, device: &str, addr: &str) {
@@ -164,11 +208,13 @@ fn device_discovered(view_model: GlobalRef, device: &str, addr: &str) {
     });
 }
 
-fn discovery_stopped(view_model: GlobalRef) {
+async fn discovery_stopped(view_model: GlobalRef) {
     let exec = Executor::new(GLOBAL_JVM.get().unwrap().clone());
     let _ = exec.with_attached(|env| {
         env.call_method(view_model.as_obj(), "onDiscoveryStopped", "()V", &[])
             .unwrap()
             .v()
     });
+
+    *BLUE_STATE.lock().await = BlueState::reset();
 }
