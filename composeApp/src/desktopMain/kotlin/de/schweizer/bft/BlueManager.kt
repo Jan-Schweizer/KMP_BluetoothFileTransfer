@@ -2,11 +2,11 @@ package de.schweizer.bft
 
 import de.schweizer.bft.ui.DeviceDiscoveryViewModel
 
-class BlueManager {
-    private external fun init()
-    external fun discover(viewModel: DeviceDiscoveryViewModel)
-    external fun connectToDevice(deviceAddr: String)
-    external fun cancelDiscovery()
+actual class BlueManager {
+    actual external fun init()
+    actual external fun discover(viewModel: DeviceDiscoveryViewModel)
+    actual external fun connectToDevice(deviceAddr: String)
+    actual external fun cancelDiscovery()
 
     init {
         init()

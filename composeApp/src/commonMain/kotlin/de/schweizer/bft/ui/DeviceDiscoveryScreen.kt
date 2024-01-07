@@ -1,4 +1,4 @@
-package de.schweizer.bft.view
+package de.schweizer.bft.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
@@ -13,7 +13,7 @@ fun DeviceDiscoveryScreen() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxSize(),
-        ) {
+    ) {
         Button(onClick = { }) {
             Text("Discover Devices")
         }

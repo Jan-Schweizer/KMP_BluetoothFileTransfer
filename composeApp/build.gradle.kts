@@ -14,6 +14,14 @@ kotlin {
                 jvmTarget = "1.8"
             }
         }
+
+        targets.all {
+            compilations.all {
+                compilerOptions.configure {
+                    freeCompilerArgs.add("-Xexpect-actual-classes")
+                }
+            }
+        }
     }
 
     jvm("desktop")

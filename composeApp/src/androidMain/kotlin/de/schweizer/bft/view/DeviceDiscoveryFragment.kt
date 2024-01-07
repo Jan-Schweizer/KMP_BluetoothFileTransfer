@@ -6,7 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
-import de.schweizer.bft.view.DeviceDiscoveryScreen
+import de.schweizer.bft.view.ui.DeviceDiscoveryScreen
 
 class DeviceDiscoveryFragment : Fragment() {
 

@@ -19,13 +19,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import de.schweizer.bft.ui.DeviceDiscoveryState
-import de.schweizer.bft.ui.DeviceDiscoveryViewModel
+import de.schweizer.bft.ui.DesktopDeviceDiscoveryViewModel
 import java.nio.file.Paths
 
 class Application {
 
-    private val viewModel = DeviceDiscoveryViewModel()
+    private val viewModel = DesktopDeviceDiscoveryViewModel()
 
     @Composable
     fun Discover() {
@@ -72,7 +71,7 @@ class Application {
     }
 
     @Composable
-    fun BluetoothDevice(name: String, addr: String, viewModel: DeviceDiscoveryViewModel) {
+    fun BluetoothDevice(name: String, addr: String, viewModel: DesktopDeviceDiscoveryViewModel) {
         Box(
             modifier = Modifier
                 .border(BorderStroke(2.dp, Color.Red))
