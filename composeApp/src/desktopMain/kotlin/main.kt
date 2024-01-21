@@ -6,7 +6,7 @@ fun main() = application {
     Window(onCloseRequest = ::exitApplication) {
 
         val app = Application()
-        app.Discover()
+        app.DeviceDiscoveryScreen()
     }
 }
 
