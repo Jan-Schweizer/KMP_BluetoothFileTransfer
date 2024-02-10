@@ -1,11 +1,25 @@
 package de.schweizer.bft
 
-class BlueManager {
+import de.schweizer.bft.ui.DeviceDiscoveryViewModel
+import co.touchlab.kermit.Logger
 
-    private external fun initLogger()
-    external fun discover()
+actual class BlueManager {
+
+    actual fun init() {}
+
+    actual fun discover(viewModel: DeviceDiscoveryViewModel) {
+        Logger.i { "Android BlueManager discover() called" }
+    }
+
+    actual fun connectToDevice(deviceAddr: String) {
+        Logger.i { "Android BlueManager connectToDevice() called" }
+    }
+
+    actual fun cancelDiscovery() {
+        Logger.i { "Android BlueManager cancelDiscovery() called" }
+    }
 
     init {
-        initLogger()
+        init()
     }
 }

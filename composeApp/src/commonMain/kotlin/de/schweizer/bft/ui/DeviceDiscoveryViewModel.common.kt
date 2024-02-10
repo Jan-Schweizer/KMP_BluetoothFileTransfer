@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
+// TODO: I don't think it's a good idea to have a CoroutineScope on a ViewModel as this can cause memory leaks
 abstract class DeviceDiscoveryViewModel : CoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.Default + SupervisorJob()

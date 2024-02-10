@@ -2,7 +2,7 @@ package de.schweizer.bft
 
 import androidx.compose.runtime.Composable
 import de.schweizer.bft.ui.DesktopDeviceDiscoveryViewModel
-import de.schweizer.bft.ui.DeviceDiscoveryScreen
+import de.schweizer.bft.ui.DeviceDiscoveryScreenCommon
 import java.nio.file.Paths
 
 class Application {
@@ -11,7 +11,7 @@ class Application {
 
     @Composable
     fun DeviceDiscoveryScreen() {
-        DeviceDiscoveryScreen(viewModel)
+        DeviceDiscoveryScreenCommon(viewModel)
     }
 
     companion object {
