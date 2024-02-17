@@ -1,13 +1,13 @@
-package de.schweizer.bft
+package de.schweizer.bft.ui
 
 import androidx.compose.runtime.Composable
-import de.schweizer.bft.ui.DesktopDeviceDiscoveryViewModel
-import de.schweizer.bft.ui.DeviceDiscoveryScreenCommon
+import de.schweizer.bft.LogLevel
+import de.schweizer.bft.NativeLogger
 import de.schweizer.bft.ui.theme.BftAppTheme
 import java.nio.file.Paths
 import co.touchlab.kermit.Logger as L
 
-class Application {
+class BftApp {
 
     private val viewModel = DesktopDeviceDiscoveryViewModel()
 
@@ -19,7 +19,7 @@ class Application {
     companion object {
         @Composable
         fun run() {
-            val app = Application()
+            val app = BftApp()
             BftAppTheme {
                 app.DeviceDiscoveryScreen()
             }
@@ -49,6 +49,5 @@ class Application {
                 )
             System.load("$nativeLibraryPath")
         }
-
     }
 }

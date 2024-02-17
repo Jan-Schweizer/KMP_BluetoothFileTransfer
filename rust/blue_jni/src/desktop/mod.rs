@@ -66,7 +66,7 @@ fn bt_manager() -> &'static BlueManager {
 }
 
 #[no_mangle]
-pub extern "system" fn Java_de_schweizer_bft_Application_init<'local>(
+pub extern "system" fn Java_de_schweizer_bft_ui_BftApp_init<'local>(
     env: JNIEnv<'local>,
     _class: JClass<'local>,
 ) {
