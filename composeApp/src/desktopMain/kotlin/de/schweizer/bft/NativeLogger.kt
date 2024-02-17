@@ -2,7 +2,7 @@ package de.schweizer.bft
 
 import kotlin.jvm.JvmStatic
 
-object Logger {
+object NativeLogger {
     @JvmStatic
     external fun init(string: String)
 }

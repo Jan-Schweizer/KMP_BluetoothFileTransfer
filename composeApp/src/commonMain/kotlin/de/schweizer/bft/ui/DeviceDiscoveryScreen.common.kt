@@ -4,8 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -24,13 +24,15 @@ fun DeviceDiscoveryScreenCommon(viewModel: DeviceDiscoveryViewModel) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxSize(),
     ) {
-        Button(onClick = {
-            if (state.isLoading) {
-                viewModel.cancelDiscovery()
-            } else {
-                viewModel.discoverDevices()
-            }
-        }) {
+        Button(
+            onClick = {
+                if (state.isLoading) {
+                    viewModel.cancelDiscovery()
+                } else {
+                    viewModel.discoverDevices()
+                }
+            },
+        ) {
             val text = if (state.isLoading) "Cancel Discovery" else "Discover"
             Text(text)
         }

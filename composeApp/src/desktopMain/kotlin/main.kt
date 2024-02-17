@@ -4,9 +4,7 @@ import de.schweizer.bft.Application
 
 fun main() = application {
     Window(onCloseRequest = ::exitApplication) {
-
-        val app = Application()
-        app.DeviceDiscoveryScreen()
+        Application.run()
     }
 }
 

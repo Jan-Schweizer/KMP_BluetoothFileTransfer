@@ -44,7 +44,7 @@ kotlin {
             implementation(libs.kotlin.coroutines.core)
             implementation(compose.runtime)
             implementation(compose.foundation)
-            implementation(compose.material)
+            implementation(compose.material3)
             @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.components.resources)
             implementation(libs.kermit)

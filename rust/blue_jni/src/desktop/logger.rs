@@ -7,7 +7,7 @@ use jni;
 use jni::objects::JString;
 
 #[no_mangle]
-pub extern "system" fn Java_de_schweizer_bft_Logger_init<'local>(
+pub extern "system" fn Java_de_schweizer_bft_NativeLogger_init<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
     log_level: JString<'local>,
@@ -18,5 +18,5 @@ pub extern "system" fn Java_de_schweizer_bft_Logger_init<'local>(
         .into();
     let log_level = log_level.to_lowercase();
     env_logger::Builder::from_env(Env::default().default_filter_or(&log_level)).init();
-    info!("Logger::init({})", &log_level);
+    info!("NativeLogger::init({})", &log_level);
 }
