@@ -2,36 +2,23 @@ package de.schweizer.bft.ui
 
 import co.touchlab.kermit.Logger
 import de.schweizer.bft.BlueManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
 
-// TODO: I don't think it's a good idea to have a CoroutineScope on a ViewModel as this can cause memory leaks
-abstract class DeviceDiscoveryViewModel : CoroutineScope {
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Default + SupervisorJob()
-
+abstract class DeviceDiscoveryViewModel {
     private val blueManager = BlueManager()
 
     private val _uiState = MutableStateFlow(DeviceDiscoveryState())
     val uiState = _uiState.asStateFlow()
 
-    fun discoverDevices() {
+    open suspend fun discoverDevices() {
         _uiState.update { DeviceDiscoveryState(isLoading = true, error = null, discoveredDevices = LinkedHashMap()) }
-        launch {
-            blueManager.discover(this@DeviceDiscoveryViewModel)
-        }
+        blueManager.discover(this@DeviceDiscoveryViewModel)
     }
 
     fun cancelDiscovery() {
-        launch {
-            blueManager.cancelDiscovery()
-        }
+        blueManager.cancelDiscovery()
     }
 
     private fun onDeviceDiscovered(discoveredDevice: String, deviceMacAddr: String) {
@@ -50,10 +37,8 @@ abstract class DeviceDiscoveryViewModel : CoroutineScope {
         _uiState.update { uiState.value.copy(isLoading = false, error = error, discoveredDevices = LinkedHashMap()) }
     }
 
-    fun connectToDevice(name: String) {
-        launch {
-            blueManager.connectToDevice(name)
-        }
+    suspend fun connectToDevice(name: String) {
+        blueManager.connectToDevice(name)
     }
 }
 

@@ -11,6 +11,7 @@ fun BftNavHost(appState: BftAppState) {
         navController = appState.navController,
         startDestination = DEVICE_DISCOVERY_ROUTE,
     ) {
-        deviceDiscoveryScreen()
+        deviceDiscoveryScreen(appState)
+        requestDeniedPermissionsScreen()
     }
 }

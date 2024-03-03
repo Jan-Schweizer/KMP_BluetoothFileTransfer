@@ -1,9 +1,10 @@
 package de.schweizer.bft.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 
 @Composable
-fun DeviceDiscoveryScreen() {
-    val viewModel = AndroidDeviceDiscoveryViewModel()
+fun DeviceDiscoveryScreen(appState: BftAppState) {
+    val viewModel = remember { AndroidDeviceDiscoveryViewModel(appState) }
     DeviceDiscoveryScreenCommon(viewModel)
 }

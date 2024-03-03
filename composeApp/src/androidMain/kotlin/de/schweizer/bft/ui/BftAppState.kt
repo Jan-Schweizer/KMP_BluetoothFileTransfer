@@ -24,7 +24,6 @@ fun rememberBftAppState(
     }
 }
 
-@Stable
 class BftAppState(
     val navController: NavHostController,
     val coroutineScope: CoroutineScope,

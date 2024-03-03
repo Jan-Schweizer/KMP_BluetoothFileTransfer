@@ -10,14 +10,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @Composable
 fun DeviceDiscoveryScreenCommon(viewModel: DeviceDiscoveryViewModel) {
+    val scope = rememberCoroutineScope()
     val state by viewModel.uiState.collectAsState()
 
     Column(
@@ -29,7 +33,7 @@ fun DeviceDiscoveryScreenCommon(viewModel: DeviceDiscoveryViewModel) {
                 if (state.isLoading) {
                     viewModel.cancelDiscovery()
                 } else {
-                    viewModel.discoverDevices()
+                    scope.launch { viewModel.discoverDevices() }
                 }
             },
         ) {
@@ -64,11 +68,13 @@ fun DeviceDiscoveryScreenCommon(viewModel: DeviceDiscoveryViewModel) {
 
 @Composable
 private fun BluetoothDevice(name: String, addr: String, viewModel: DeviceDiscoveryViewModel) {
+    val scope = rememberCoroutineScope()
+
     Box(
         modifier = Modifier
             .border(BorderStroke(2.dp, Color.Red))
             .clickable(role = Role.Button) {
-                viewModel.connectToDevice(addr)
+                scope.launch { viewModel.connectToDevice(addr) }
             },
     ) {
         Text(name);
