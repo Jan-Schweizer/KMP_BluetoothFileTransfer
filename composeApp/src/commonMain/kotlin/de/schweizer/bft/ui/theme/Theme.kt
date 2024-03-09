@@ -27,6 +27,6 @@ fun BftAppTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        content = content
+        content = content,
     )
 }

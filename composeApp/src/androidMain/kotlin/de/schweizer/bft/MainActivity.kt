@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun SetupPermissionHandling() {
         val requestPermissionLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestMultiplePermissions()
+            contract = ActivityResultContracts.RequestMultiplePermissions(),
         ) {
             PermissionManager.onPermissionResult(it.values.toList())
         }

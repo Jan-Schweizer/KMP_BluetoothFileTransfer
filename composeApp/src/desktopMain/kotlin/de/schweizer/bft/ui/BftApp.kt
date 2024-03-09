@@ -45,7 +45,7 @@ class BftApp {
                     "desktopMain",
                     "jniLibs",
                     "linux-x86_64",
-                    "libblue_jni.so"
+                    "libblue_jni.so",
                 )
             System.load("$nativeLibraryPath")
         }

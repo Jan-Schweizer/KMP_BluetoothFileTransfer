@@ -12,5 +12,5 @@ enum class LogLevel {
     WARN,
     INFO,
     DEBUG,
-    TRACE
+    TRACE,
 }

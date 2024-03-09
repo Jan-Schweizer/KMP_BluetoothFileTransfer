@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -77,6 +76,6 @@ private fun BluetoothDevice(name: String, addr: String, viewModel: DeviceDiscove
                 scope.launch { viewModel.connectToDevice(addr) }
             },
     ) {
-        Text(name);
+        Text(name)
     }
 }

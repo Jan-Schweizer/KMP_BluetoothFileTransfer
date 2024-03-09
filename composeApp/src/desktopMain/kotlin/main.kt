@@ -7,4 +7,3 @@ fun main() = application {
         BftApp.run()
     }
 }
-

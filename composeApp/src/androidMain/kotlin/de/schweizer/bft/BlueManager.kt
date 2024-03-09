@@ -1,7 +1,7 @@
 package de.schweizer.bft
 
-import de.schweizer.bft.ui.DeviceDiscoveryViewModel
 import co.touchlab.kermit.Logger
+import de.schweizer.bft.ui.DeviceDiscoveryViewModel
 
 actual class BlueManager {
 

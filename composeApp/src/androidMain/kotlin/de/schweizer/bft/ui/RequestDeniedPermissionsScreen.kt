@@ -71,17 +71,17 @@ private fun DeniedPermission(permissionName: String, permissionDescription: Stri
         Column(
             modifier = Modifier
                 .padding(vertical = 4.dp)
-                .fillMaxWidth()
+                .fillMaxWidth(),
         ) {
             Text(
                 text = permissionName,
                 style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
             Text(
                 text = permissionDescription,
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(horizontal = 4.dp)
+                modifier = Modifier.padding(horizontal = 4.dp),
             )
             Spacer(modifier = Modifier.requiredHeight(4.dp))
             Text(
@@ -97,7 +97,7 @@ private fun DeniedPermission(permissionName: String, permissionDescription: Stri
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK
                         }
                         context.startActivity(intent)
-                    }
+                    },
             )
         }
     }
