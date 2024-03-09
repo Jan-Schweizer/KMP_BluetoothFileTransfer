@@ -50,13 +50,8 @@ fun RequestDeniedPermissionsScreen(appState: BftAppState) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             val (permissionName, permissionDescription) = when (nextDeniedPermission) {
-                PermissionManager.Permission.BluetoothAdvertise,
-                PermissionManager.Permission.BluetoothConnect,
-                PermissionManager.Permission.BluetoothScan
-                -> "Bluetooth " to "Please provide access to Bluetooth"
-
-                PermissionManager.Permission.BackgroundLocation ->
-                    "Background Location" to "Please enable Background Location all the time"
+                PermissionManager.Permission.Bluetooth -> "Bluetooth " to "Please provide access to Bluetooth"
+                PermissionManager.Permission.BackgroundLocation -> "Background Location" to "Please enable Background Location all the time"
             }
             DeniedPermission(permissionName, permissionDescription)
         }

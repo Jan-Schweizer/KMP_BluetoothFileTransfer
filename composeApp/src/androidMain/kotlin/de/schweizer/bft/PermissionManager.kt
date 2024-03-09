@@ -13,24 +13,20 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 
 object PermissionManager {
-    sealed class Permission(val permission: String) {
-        data object BackgroundLocation : Permission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-
-        @RequiresApi(Build.VERSION_CODES.S)
-        data object BluetoothAdvertise : Permission(Manifest.permission.BLUETOOTH_ADVERTISE)
-
-        @RequiresApi(Build.VERSION_CODES.S)
-        data object BluetoothConnect : Permission(Manifest.permission.BLUETOOTH_CONNECT)
-
-        @RequiresApi(Build.VERSION_CODES.S)
-        data object BluetoothScan : Permission(Manifest.permission.BLUETOOTH_SCAN)
+    enum class Permission(val permissions: Array<String>) {
+        BackgroundLocation(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION)),
+        Bluetooth(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) arrayOf(
+                Manifest.permission.BLUETOOTH_ADVERTISE,
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN,
+            ) else emptyArray()
+        )
     }
 
     private val permissions: List<Permission> = listOf(
         Permission.BackgroundLocation,
-        Permission.BluetoothAdvertise,
-        Permission.BluetoothConnect,
-        Permission.BluetoothScan,
+        Permission.Bluetooth,
     )
 
     private val _deniedPermissions: MutableStateFlow<List<Permission>> = MutableStateFlow(emptyList())
@@ -46,7 +42,7 @@ object PermissionManager {
     fun updateDeniedPermissions(context: Context) {
         val deniedPerms = mutableListOf<Permission>()
         permissions.forEach {
-            if (!isPermissionGranted(context, it)) {
+            if (it.permissions.any { permission -> !isPermissionGranted(context, permission) }) {
                 deniedPerms.add(it)
             }
         }
@@ -54,8 +50,8 @@ object PermissionManager {
     }
 
     fun requestPermissions(permissions: List<Permission>, continuation: Continuation<Boolean>) {
-        requestPermissionsDelegate(permissions)
         requestContinuation = continuation
+        requestPermissionsDelegate(permissions)
     }
 
     fun onPermissionResult(permissionResult: List<Boolean>) {
@@ -63,7 +59,7 @@ object PermissionManager {
         requestContinuation = null
     }
 
-    private fun isPermissionGranted(context: Context, permission: Permission): Boolean {
-        return ContextCompat.checkSelfPermission(context, permission.permission) == PackageManager.PERMISSION_GRANTED
+    private fun isPermissionGranted(context: Context, permission: String): Boolean {
+        return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
     }
 }

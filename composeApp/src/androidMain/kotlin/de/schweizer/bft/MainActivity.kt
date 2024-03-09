@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
             PermissionManager.onPermissionResult(it.values.toList())
         }
         PermissionManager.setup { permissions ->
-            requestPermissionLauncher.launch(permissions.map { it.permission }.toTypedArray())
+            requestPermissionLauncher.launch(permissions.flatMap { it.permissions.toList() }.toTypedArray())
         }
     }
 }
