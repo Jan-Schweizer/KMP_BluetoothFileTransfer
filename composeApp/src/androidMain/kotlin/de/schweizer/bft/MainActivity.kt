@@ -7,12 +7,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import co.touchlab.kermit.Logger
-import de.schweizer.bft.PermissionManager.Permission
 import de.schweizer.bft.ui.BftApp
-import de.schweizer.bft.ui.rememberBftAppState
 import de.schweizer.bft.ui.theme.BftAppTheme
-import kotlin.coroutines.Continuation
-import kotlin.coroutines.resume
 
 class MainActivity : ComponentActivity() {
 
@@ -28,6 +24,11 @@ class MainActivity : ComponentActivity() {
                 BftApp()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        PermissionManager.updateDeniedPermissions(this)
     }
 
     @Composable

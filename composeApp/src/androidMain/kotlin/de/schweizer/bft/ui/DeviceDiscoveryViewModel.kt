@@ -9,7 +9,7 @@ import kotlin.coroutines.suspendCoroutine
 class AndroidDeviceDiscoveryViewModel(private val appState: BftAppState) : DeviceDiscoveryViewModel() {
     override suspend fun discoverDevices() {
         val areAllPermissionsGranted = suspendCoroutine {
-            PermissionManager.requestPermissions(PermissionManager.permissions, it)
+            PermissionManager.requestPermissions(PermissionManager.deniedPermissions.value, it)
         }
 
         if (areAllPermissionsGranted) {

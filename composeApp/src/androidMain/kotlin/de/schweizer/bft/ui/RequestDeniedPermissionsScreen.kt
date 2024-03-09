@@ -10,40 +10,55 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import de.schweizer.bft.PermissionManager
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 @Composable
-fun RequestDeniedPermissionsScreen() {
-    // TODO: if nextDeniedPermission == null -> popBackstack
+fun RequestDeniedPermissionsScreen(appState: BftAppState) {
+    LaunchedEffect(Unit) {
+        PermissionManager.deniedPermissions.onEach {
+            if (it.isEmpty()) {
+                appState.navController.popBackStack()
+            }
+        }.launchIn(this)
+    }
 
-    val context = LocalContext.current
+    val deniedPermissions by PermissionManager.deniedPermissions.collectAsState()
 
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        if (!PermissionManager.isPermissionGranted(context, PermissionManager.bluetoothAdvertise!!) ||
-            !PermissionManager.isPermissionGranted(context, PermissionManager.bluetoothConnect!!) ||
-            !PermissionManager.isPermissionGranted(context, PermissionManager.bluetoothScan!!)
+    if (deniedPermissions.isNotEmpty()) {
+        val nextDeniedPermission = deniedPermissions.first()
+
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            DeniedPermission(
-                permissionName = "Bluetooth",
-                permissionDescription = "Please provide access to Bluetooth",
-            )
+            val (permissionName, permissionDescription) = when (nextDeniedPermission) {
+                PermissionManager.Permission.BluetoothAdvertise,
+                PermissionManager.Permission.BluetoothConnect,
+                PermissionManager.Permission.BluetoothScan
+                -> "Bluetooth " to "Please provide access to Bluetooth"
+
+                PermissionManager.Permission.BackgroundLocation ->
+                    "Background Location" to "Please enable Background Location all the time"
+            }
+            DeniedPermission(permissionName, permissionDescription)
         }
     }
 }
@@ -53,17 +68,33 @@ private fun DeniedPermission(permissionName: String, permissionDescription: Stri
     val context = LocalContext.current
 
     Box(
-        modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.primary),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .border(1.dp, MaterialTheme.colorScheme.primary),
     ) {
         Column(
-            modifier = Modifier.padding(4.dp),
+            modifier = Modifier
+                .padding(vertical = 4.dp)
+                .fillMaxWidth()
         ) {
-            Text(text = permissionName, style = MaterialTheme.typography.headlineLarge)
-            Spacer(modifier = Modifier.requiredHeight(16.dp))
-            Text(text = permissionDescription, style = MaterialTheme.typography.bodyMedium)
-            Spacer(modifier = Modifier.requiredHeight(16.dp))
-            Box(
+            Text(
+                text = permissionName,
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            Text(
+                text = permissionDescription,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+            Spacer(modifier = Modifier.requiredHeight(4.dp))
+            Text(
+                text = "To system settings",
+                textDecoration = TextDecoration.Underline,
+                style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier
+                    .padding(horizontal = 4.dp)
                     .clickable(role = Role.Button) {
                         val intent = Intent().apply {
                             action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
@@ -72,13 +103,7 @@ private fun DeniedPermission(permissionName: String, permissionDescription: Stri
                         }
                         context.startActivity(intent)
                     }
-            ) {
-                Text(
-                    text = "To system settings",
-                    textDecoration = TextDecoration.Underline,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+            )
         }
     }
 }

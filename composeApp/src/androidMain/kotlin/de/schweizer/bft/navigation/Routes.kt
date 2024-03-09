@@ -21,10 +21,10 @@ fun NavGraphBuilder.deviceDiscoveryScreen(appState: BftAppState) {
     }
 }
 
-fun NavGraphBuilder.requestDeniedPermissionsScreen() {
+fun NavGraphBuilder.requestDeniedPermissionsScreen(appState: BftAppState) {
     composable(
         route = REQUEST_DENIED_PERMISSIONS_ROUTE,
     ) {
-        RequestDeniedPermissionsScreen()
+        RequestDeniedPermissionsScreen(appState)
     }
 }
