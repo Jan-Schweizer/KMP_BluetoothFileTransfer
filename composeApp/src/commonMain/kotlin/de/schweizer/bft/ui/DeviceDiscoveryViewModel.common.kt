@@ -7,38 +7,37 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 abstract class DeviceDiscoveryViewModel {
-    private val blueManager = BlueManager()
-
     private val _uiState = MutableStateFlow(DeviceDiscoveryState())
     val uiState = _uiState.asStateFlow()
 
     open suspend fun discoverDevices() {
         _uiState.update { DeviceDiscoveryState(isLoading = true, error = null, discoveredDevices = LinkedHashMap()) }
-        blueManager.discover(this@DeviceDiscoveryViewModel)
+        BlueManager.discover(this@DeviceDiscoveryViewModel)
     }
 
     fun cancelDiscovery() {
-        blueManager.cancelDiscovery()
+        BlueManager.cancelDiscovery()
+        _uiState.update { uiState.value.copy(isLoading = false) }
     }
 
-    private fun onDeviceDiscovered(discoveredDevice: String, deviceMacAddr: String) {
+    fun onDeviceDiscovered(discoveredDevice: String, deviceMacAddr: String) {
         val discoveredDevices = LinkedHashMap(uiState.value.discoveredDevices)
         discoveredDevices[deviceMacAddr] = discoveredDevice
 
         _uiState.update { uiState.value.copy(discoveredDevices = discoveredDevices) }
     }
 
-    private fun onDiscoveryStopped() {
+    fun onDiscoveryStopped() {
         _uiState.update { uiState.value.copy(isLoading = false) }
     }
 
-    private fun errorHandler(error: String) {
+    fun errorHandler(error: String) {
         Logger.i { "Error: $error" }
         _uiState.update { uiState.value.copy(isLoading = false, error = error, discoveredDevices = LinkedHashMap()) }
     }
 
     suspend fun connectToDevice(name: String) {
-        blueManager.connectToDevice(name)
+        BlueManager.connectToDevice(name)
     }
 }
 

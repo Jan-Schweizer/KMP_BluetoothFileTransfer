@@ -12,5 +12,6 @@ fun BftNavHost(appState: BftAppState) {
     ) {
         deviceDiscoveryScreen(appState)
         requestDeniedPermissionsScreen(appState)
+        requestEnableBluetooth(appState)
     }
 }
