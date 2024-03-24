@@ -7,7 +7,7 @@ use log::info;
 use tokio::sync::{mpsc, Mutex};
 use tokio::time::{sleep, Duration};
 
-use jni::objects::{GlobalRef, JObject, JString, JValue};
+use jni::objects::{JObject, JString, JValue};
 use jni::{Executor, JNIEnv};
 
 use crate::desktop::GLOBAL_JVM;
@@ -57,18 +57,15 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_init<'local>(
 
 #[no_mangle]
 pub extern "system" fn Java_de_schweizer_bft_BlueManager_discover<'local>(
-    env: JNIEnv<'local>,
+    _env: JNIEnv<'local>,
     _obj: JObject<'local>,
-    view_model: JObject<'local>,
 ) {
     info!("BlueManager::discover()");
 
-    let view_model = env.new_global_ref(view_model).unwrap();
-
-    rt_handle().spawn(discover_devices(view_model));
+    rt_handle().spawn(discover_devices());
 }
 
-async fn discover_devices(view_model: GlobalRef) {
+async fn discover_devices() {
     let manager = bt_manager();
 
     manager
@@ -103,7 +100,7 @@ async fn discover_devices(view_model: GlobalRef) {
                             let addr_str = addr.to_string();
                             info!("Device ({}) with address: {} added", device_name, addr_str);
 
-                            device_discovered(view_model.clone(), &device_name, &addr_str);
+                            device_discovered(&device_name, &addr_str);
 
                             let change_event = device.events().await.expect("Getting events from device should not fail").map(move |event| (addr, event));
                             all_change_events.push(change_event);
@@ -120,12 +117,12 @@ async fn discover_devices(view_model: GlobalRef) {
             }
             Some(()) = timeout_rx.recv() => {
                 info!("Timeout reached, ending discovery");
-                discovery_stopped(view_model.clone()).await;
+                discovery_stopped().await;
                 break;
             }
             Some(()) = cancel_rx.recv() => {
                 info!("Canceling Discovery");
-                discovery_stopped(view_model.clone()).await;
+                discovery_stopped().await;
                 timeout_task.abort();
                 break;
             }
@@ -191,14 +188,18 @@ async fn sleep_and_notify(duration: Duration) {
     }
 }
 
-fn device_discovered(view_model: GlobalRef, device: &str, addr: &str) {
+fn device_discovered(device: &str, addr: &str) {
     let exec = Executor::new(GLOBAL_JVM.get().unwrap().clone());
     let _ = exec.with_attached(|env| {
         let device_name = env.new_string(&device).unwrap();
         let device_addr = env.new_string(&addr).unwrap();
 
-        env.call_method(
-            view_model.as_obj(),
+        let blue_manager_cls = env
+            .find_class("de/schweizer/bft/BlueManager")
+            .expect("BlueManger could not be found");
+
+        env.call_static_method(
+            blue_manager_cls,
             "onDeviceDiscovered",
             "(Ljava/lang/String;Ljava/lang/String;)V",
             &[JValue::from(&device_name), JValue::from(&device_addr)],
@@ -208,10 +209,14 @@ fn device_discovered(view_model: GlobalRef, device: &str, addr: &str) {
     });
 }
 
-async fn discovery_stopped(view_model: GlobalRef) {
+async fn discovery_stopped() {
     let exec = Executor::new(GLOBAL_JVM.get().unwrap().clone());
     let _ = exec.with_attached(|env| {
-        env.call_method(view_model.as_obj(), "onDiscoveryStopped", "()V", &[])
+        let blue_manager_cls = env
+            .find_class("de/schweizer/bft/BlueManager")
+            .expect("BlueManger could not be found");
+
+        env.call_static_method(blue_manager_cls, "onDiscoveryStopped", "()V", &[])
             .unwrap()
             .v()
     });

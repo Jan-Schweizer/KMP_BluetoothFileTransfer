@@ -19,10 +19,13 @@ actual object BlueManager {
     actual external fun connectToDevice(deviceAddr: String)
     actual external fun cancelDiscovery()
 
+    @JvmStatic
     actual fun onDiscoveryStopped() {
         discoveryStoppedSharedFlow.tryEmit(Unit)
         Logger.i { "BlueManager::onDiscoveryStopped()" }
     }
+
+    @JvmStatic
     actual fun onDeviceDiscovered(deviceName: String, deviceAddress: String) {
         deviceDiscoveredSharedFlow.tryEmit(BlueDevice(deviceName, deviceAddress))
         Logger.i { "BlueManager::onDeviceDiscovered(): deviceName=$deviceName, deviceAddress=$deviceAddress" }
