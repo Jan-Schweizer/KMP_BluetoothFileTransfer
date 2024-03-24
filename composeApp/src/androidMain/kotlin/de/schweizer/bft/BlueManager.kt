@@ -11,15 +11,10 @@ import android.content.IntentFilter
 import android.os.Build
 import androidx.core.content.ContextCompat.getSystemService
 import co.touchlab.kermit.Logger
-import de.schweizer.bft.ui.DeviceDiscoveryViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 
 actual object BlueManager {
@@ -27,11 +22,14 @@ actual object BlueManager {
     private lateinit var requestEnableBluetoothDelegate: () -> Unit
     private val bluetoothBroadcastReceiver = BluetoothBroadcastReceiver()
 
-    private val deviceDiscovered = MutableSharedFlow<BluetoothDevice>(
-        replay = 5,
+    actual val deviceDiscoveredSharedFlow = MutableSharedFlow<BlueDevice>(
+        replay = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
-    private var deviceDiscoveredJob: Job? = null
+    actual val discoveryStoppedSharedFlow = MutableSharedFlow<Unit>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
 
     private val _isBluetoothEnabled = MutableStateFlow(BluetoothState.Disabled)
     val isBluetoothEnabled = _isBluetoothEnabled.asStateFlow()
@@ -60,26 +58,30 @@ actual object BlueManager {
 
     actual fun init() {}
 
-    actual suspend fun discover(viewModel: DeviceDiscoveryViewModel) = coroutineScope {
-        // Permissions are handled by viewModel.discoverDevices() right before this call.
-        deviceDiscoveredJob = deviceDiscovered.onEach { viewModel.onDeviceDiscovered(it.name ?: "<Unknown>", it.address) }.launchIn(this)
-
+    actual suspend fun discover() {
         val startingSuccessful = bluetoothAdapter.startDiscovery()
         Logger.i { "BlueManager::discover(): start discovery successful=$startingSuccessful" }
     }
 
     actual fun connectToDevice(deviceAddr: String) {
         // > After you have found a device to connect to, be certain that you stop discovery with cancelDiscovery() before attempting a connection.
-        cancelDiscovery()
+//        cancelDiscovery()
         Logger.i { "Android BlueManager connectToDevice() called" }
     }
 
     actual fun cancelDiscovery() {
-        deviceDiscoveredJob?.cancel()
-        deviceDiscoveredJob = null
-
         bluetoothAdapter.cancelDiscovery()
         Logger.i { "BlueManager::cancelDiscovery(): canceling discovery" }
+    }
+
+    actual fun onDiscoveryStopped() {
+        discoveryStoppedSharedFlow.tryEmit(Unit)
+        Logger.i { "BlueManager::onDiscoveryStopped()" }
+    }
+
+    actual fun onDeviceDiscovered(deviceName: String, deviceAddress: String) {
+        deviceDiscoveredSharedFlow.tryEmit(BlueDevice(deviceName, deviceAddress))
+        Logger.i { "BlueManager::onDeviceDiscovered(): deviceName=$deviceName, deviceAddress=$deviceAddress" }
     }
 
     init {
@@ -94,6 +96,10 @@ actual object BlueManager {
                     updateBluetoothEnabled()
                     Logger.i { "onReceive(): Bluetooth state changed to enabled=${bluetoothAdapter.isEnabled}" }
                 }
+                BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
+                    onDiscoveryStopped()
+                    Logger.i { "onReceive(): Bluetooth discovery finished" }
+                }
                 BluetoothDevice.ACTION_FOUND -> {
                     val device: BluetoothDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
@@ -101,8 +107,8 @@ actual object BlueManager {
                         @Suppress("Deprecation")
                         intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
                     }
-                    if (device != null) {
-                        deviceDiscovered.tryEmit(device)
+                    if (device != null && device.name != null) {
+                        onDeviceDiscovered(device.name, device.address)
                         Logger.i { "onReceive(): Bluetooth device discovered with name=${device.name} and address=${device.address}" }
                     }
                 }
@@ -113,6 +119,7 @@ actual object BlueManager {
     fun registerBluetoothBroadcastReceiver(context: Context) {
         val intentFilter = IntentFilter().apply {
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+            addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
             addAction(BluetoothDevice.ACTION_FOUND)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

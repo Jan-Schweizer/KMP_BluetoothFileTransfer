@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -20,10 +21,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import de.schweizer.bft.BlueManager
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 @Composable
 fun DeviceDiscoveryScreenCommon(viewModel: DeviceDiscoveryViewModel) {
+    LaunchedEffect(Unit) {
+        BlueManager.deviceDiscoveredSharedFlow.onEach { viewModel.onDeviceDiscovered(it) }.launchIn(this)
+        BlueManager.discoveryStoppedSharedFlow.onEach { viewModel.onDiscoveryStopped() }.launchIn(this)
+    }
+
     val scope = rememberCoroutineScope()
     val state by viewModel.uiState.collectAsState()
 
@@ -58,7 +67,7 @@ fun DeviceDiscoveryScreenCommon(viewModel: DeviceDiscoveryViewModel) {
             Text(error)
         } else if (discoveredDevices.isNotEmpty()) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                discoveredDevices.forEach { (addr, name) ->
+                discoveredDevices.forEach { (name, addr) ->
                     key(addr) {
                         BluetoothDevice(name, addr, viewModel)
                         Spacer(modifier = Modifier.requiredHeight(16.dp))

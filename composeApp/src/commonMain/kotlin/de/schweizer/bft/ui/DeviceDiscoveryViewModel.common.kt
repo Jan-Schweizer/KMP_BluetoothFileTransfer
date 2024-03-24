@@ -1,6 +1,7 @@
 package de.schweizer.bft.ui
 
 import co.touchlab.kermit.Logger
+import de.schweizer.bft.BlueDevice
 import de.schweizer.bft.BlueManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,18 +12,17 @@ abstract class DeviceDiscoveryViewModel {
     val uiState = _uiState.asStateFlow()
 
     open suspend fun discoverDevices() {
-        _uiState.update { DeviceDiscoveryState(isLoading = true, error = null, discoveredDevices = LinkedHashMap()) }
-        BlueManager.discover(this@DeviceDiscoveryViewModel)
+        _uiState.update { DeviceDiscoveryState(isLoading = true, error = null, discoveredDevices = LinkedHashSet()) }
+        BlueManager.discover()
     }
 
     fun cancelDiscovery() {
         BlueManager.cancelDiscovery()
-        _uiState.update { uiState.value.copy(isLoading = false) }
     }
 
-    fun onDeviceDiscovered(discoveredDevice: String, deviceMacAddr: String) {
-        val discoveredDevices = LinkedHashMap(uiState.value.discoveredDevices)
-        discoveredDevices[deviceMacAddr] = discoveredDevice
+    fun onDeviceDiscovered(device: BlueDevice) {
+        val discoveredDevices = LinkedHashSet(uiState.value.discoveredDevices)
+        discoveredDevices.add(device)
 
         _uiState.update { uiState.value.copy(discoveredDevices = discoveredDevices) }
     }
@@ -33,7 +33,7 @@ abstract class DeviceDiscoveryViewModel {
 
     fun errorHandler(error: String) {
         Logger.i { "Error: $error" }
-        _uiState.update { uiState.value.copy(isLoading = false, error = error, discoveredDevices = LinkedHashMap()) }
+        _uiState.update { uiState.value.copy(isLoading = false, error = error, discoveredDevices = LinkedHashSet()) }
     }
 
     suspend fun connectToDevice(name: String) {
@@ -44,5 +44,5 @@ abstract class DeviceDiscoveryViewModel {
 data class DeviceDiscoveryState(
     val isLoading: Boolean = false,
     val error: String? = null,
-    val discoveredDevices: LinkedHashMap<String, String> = LinkedHashMap(),
+    val discoveredDevices: LinkedHashSet<BlueDevice> = LinkedHashSet(),
 )
