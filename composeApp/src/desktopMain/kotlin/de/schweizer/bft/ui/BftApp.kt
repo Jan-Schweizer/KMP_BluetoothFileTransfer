@@ -1,30 +1,20 @@
 package de.schweizer.bft.ui
 
 import androidx.compose.runtime.Composable
+import cafe.adriel.voyager.navigator.Navigator
 import de.schweizer.bft.LogLevel
 import de.schweizer.bft.NativeLogger
-import de.schweizer.bft.ui.theme.BftAppTheme
 import java.nio.file.Paths
 import co.touchlab.kermit.Logger as L
 
 class BftApp {
 
-    private val viewModel = DesktopDeviceDiscoveryViewModel()
-
     @Composable
-    private fun DeviceDiscoveryScreen() {
-        DeviceDiscoveryScreenCommon(viewModel)
+    fun run() {
+        Navigator(DeviceDiscoveryScreen())
     }
 
     companion object {
-        @Composable
-        fun run() {
-            val app = BftApp()
-            BftAppTheme {
-                app.DeviceDiscoveryScreen()
-            }
-        }
-
         @JvmStatic
         private external fun init()
 

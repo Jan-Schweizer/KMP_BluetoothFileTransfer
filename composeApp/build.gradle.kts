@@ -34,7 +34,6 @@ kotlin {
             implementation(libs.compose.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.fragmentKtx)
-            implementation(libs.compose.navigation)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
@@ -48,6 +47,9 @@ kotlin {
             @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.components.resources)
             implementation(libs.kermit)
+            implementation(libs.voyager.navigator)
+            implementation(libs.voyager.transitions)
+            implementation(libs.voyager.screenmodel)
         }
     }
 }

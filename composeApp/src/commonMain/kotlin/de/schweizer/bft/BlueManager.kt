@@ -1,10 +1,20 @@
 package de.schweizer.bft
 
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 
 expect object BlueManager {
-    val deviceDiscoveredSharedFlow: MutableSharedFlow<BlueDevice>
-    val discoveryStoppedSharedFlow: MutableSharedFlow<Unit>
+    val deviceDiscoveredSharedFlow: SharedFlow<BlueDevice>
+    val discoveryStoppedSharedFlow: SharedFlow<Unit>
+
+    enum class BluetoothState {
+        Enabled,
+        Disabled,
+    }
+
+    val isBluetoothEnabled: StateFlow<BluetoothState>
+
+    fun requestEnableBluetooth()
 
     internal fun init()
     suspend fun discover()

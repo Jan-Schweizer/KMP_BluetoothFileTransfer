@@ -5,14 +5,16 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 
-object PermissionManager {
-    enum class Permission(val permissions: Array<String>) {
+actual object PermissionManager {
+    actual enum class Permission(val permissions: Array<String>) {
         BackgroundLocation(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION)),
         Bluetooth(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) arrayOf(
@@ -29,7 +31,7 @@ object PermissionManager {
     )
 
     private val _deniedPermissions: MutableStateFlow<List<Permission>> = MutableStateFlow(emptyList())
-    val deniedPermissions: StateFlow<List<Permission>> = _deniedPermissions
+    actual val deniedPermissions: StateFlow<List<Permission>> = _deniedPermissions.asStateFlow()
 
     private var requestContinuation: Continuation<Boolean>? = null
     private lateinit var requestPermissionsDelegate: (List<Permission>) -> Unit
@@ -48,7 +50,7 @@ object PermissionManager {
         _deniedPermissions.update { deniedPerms }
     }
 
-    fun requestPermissions(permissions: List<Permission>, continuation: Continuation<Boolean>) {
+    actual fun requestPermissions(permissions: List<Permission>, continuation: Continuation<Boolean>) {
         requestContinuation = continuation
         requestPermissionsDelegate(permissions)
     }
@@ -56,6 +58,10 @@ object PermissionManager {
     fun onPermissionResult(permissionResult: List<Boolean>) {
         requestContinuation?.resume(permissionResult.all { it })
         requestContinuation = null
+    }
+
+    actual fun isPermissionGranted(permission: Permission): Boolean {
+        return permission.permissions.all { isPermissionGranted(ApplicationContextProvider.applicationContext, it) }
     }
 
     private fun isPermissionGranted(context: Context, permission: String): Boolean {

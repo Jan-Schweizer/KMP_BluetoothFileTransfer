@@ -18,6 +18,7 @@ kermit = "2.0.2"
 kotlin = "1.9.20"
 kotlin-coroutines = "1.7.3"
 junit = "4.13.2"
+voyager = "1.0.0"
 
 [libraries]
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
@@ -26,13 +27,14 @@ kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlin-coroutines"}
 kotlin-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlin-coroutines" }
+voyager-navigator = { module = "cafe.adriel.voyager:voyager-navigator", version.ref = "voyager" }
+voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", version.ref = "voyager" }
+voyager-screenmodel = { module = "cafe.adriel.voyager:voyager-screenmodel", version.ref = "voyager" }
 
 # ----- Compose -----
 compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
-compose-material3 = "androidx.compose.material3:material3:1.2.0"
-compose-navigation = "androidx.navigation:navigation-compose:2.7.7"
 
 # ----- AndroidX -----
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }

@@ -1,9 +1,9 @@
 package de.schweizer.bft.ui
 
 import androidx.compose.runtime.Composable
-import de.schweizer.bft.navigation.BftNavHost
+import cafe.adriel.voyager.navigator.Navigator
 
 @Composable
-fun BftApp(appState: BftAppState = rememberBftAppState()) {
-    BftNavHost(appState)
+fun BftApp() {
+    Navigator(DeviceDiscoveryScreen())
 }

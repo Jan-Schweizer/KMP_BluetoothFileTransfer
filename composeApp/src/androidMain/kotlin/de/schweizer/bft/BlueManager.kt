@@ -14,6 +14,7 @@ import co.touchlab.kermit.Logger
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -22,22 +23,18 @@ actual object BlueManager {
     private lateinit var requestEnableBluetoothDelegate: () -> Unit
     private val bluetoothBroadcastReceiver = BluetoothBroadcastReceiver()
 
-    actual val deviceDiscoveredSharedFlow = MutableSharedFlow<BlueDevice>(
-        replay = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
-    actual val discoveryStoppedSharedFlow = MutableSharedFlow<Unit>(
-        replay = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
+    private val _deviceDiscoveredSharedFlow = MutableSharedFlow<BlueDevice>(extraBufferCapacity = 10, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    actual val deviceDiscoveredSharedFlow = _deviceDiscoveredSharedFlow.asSharedFlow()
+    private val _discoveryStoppedSharedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    actual val discoveryStoppedSharedFlow = _discoveryStoppedSharedFlow.asSharedFlow()
 
-    private val _isBluetoothEnabled = MutableStateFlow(BluetoothState.Disabled)
-    val isBluetoothEnabled = _isBluetoothEnabled.asStateFlow()
-
-    enum class BluetoothState {
+    actual enum class BluetoothState {
         Enabled,
         Disabled,
     }
+
+    private val _isBluetoothEnabled = MutableStateFlow(BluetoothState.Disabled)
+    actual val isBluetoothEnabled = _isBluetoothEnabled.asStateFlow()
 
     private fun updateBluetoothEnabled() = _isBluetoothEnabled.update {
         when (bluetoothAdapter.isEnabled) {
@@ -54,7 +51,7 @@ actual object BlueManager {
         updateBluetoothEnabled()
     }
 
-    fun requestEnableBluetooth() = requestEnableBluetoothDelegate()
+    actual fun requestEnableBluetooth() = requestEnableBluetoothDelegate()
 
     actual fun init() {}
 
@@ -75,12 +72,12 @@ actual object BlueManager {
     }
 
     actual fun onDiscoveryStopped() {
-        discoveryStoppedSharedFlow.tryEmit(Unit)
+        _discoveryStoppedSharedFlow.tryEmit(Unit)
         Logger.i { "BlueManager::onDiscoveryStopped()" }
     }
 
     actual fun onDeviceDiscovered(deviceName: String, deviceAddress: String) {
-        deviceDiscoveredSharedFlow.tryEmit(BlueDevice(deviceName, deviceAddress))
+        _deviceDiscoveredSharedFlow.tryEmit(BlueDevice(deviceName, deviceAddress))
         Logger.i { "BlueManager::onDeviceDiscovered(): deviceName=$deviceName, deviceAddress=$deviceAddress" }
     }
 

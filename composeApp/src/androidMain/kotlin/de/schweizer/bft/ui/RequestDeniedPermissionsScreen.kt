@@ -25,80 +25,87 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import de.schweizer.bft.PermissionManager
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
-@Composable
-fun RequestDeniedPermissionsScreen(appState: BftAppState) {
-    LaunchedEffect(Unit) {
-        PermissionManager.deniedPermissions.onEach {
-            if (it.isEmpty()) {
-                appState.navController.popBackStack()
+actual class RequestDeniedPermissionsScreen : Screen {
+    @Composable
+    override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
+
+        LaunchedEffect(Unit) {
+            PermissionManager.deniedPermissions.onEach {
+                if (it.isEmpty()) {
+                    navigator.pop()
+                }
+            }.launchIn(this)
+        }
+
+        val deniedPermissions by PermissionManager.deniedPermissions.collectAsState()
+
+        if (deniedPermissions.isNotEmpty()) {
+            val nextDeniedPermission = deniedPermissions.first()
+
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                val (permissionName, permissionDescription) = when (nextDeniedPermission) {
+                    PermissionManager.Permission.Bluetooth -> "Bluetooth " to "Please provide access to Bluetooth"
+                    PermissionManager.Permission.BackgroundLocation -> "Background Location" to "Please enable Background Location all the time"
+                }
+                DeniedPermission(permissionName, permissionDescription)
             }
-        }.launchIn(this)
-    }
-
-    val deniedPermissions by PermissionManager.deniedPermissions.collectAsState()
-
-    if (deniedPermissions.isNotEmpty()) {
-        val nextDeniedPermission = deniedPermissions.first()
-
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            val (permissionName, permissionDescription) = when (nextDeniedPermission) {
-                PermissionManager.Permission.Bluetooth -> "Bluetooth " to "Please provide access to Bluetooth"
-                PermissionManager.Permission.BackgroundLocation -> "Background Location" to "Please enable Background Location all the time"
-            }
-            DeniedPermission(permissionName, permissionDescription)
         }
     }
-}
 
-@Composable
-private fun DeniedPermission(permissionName: String, permissionDescription: String) {
-    val context = LocalContext.current
+    @Composable
+    private fun DeniedPermission(permissionName: String, permissionDescription: String) {
+        val context = LocalContext.current
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .border(1.dp, MaterialTheme.colorScheme.primary),
-    ) {
-        Column(
+        Box(
             modifier = Modifier
-                .padding(vertical = 4.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .border(1.dp, MaterialTheme.colorScheme.primary),
         ) {
-            Text(
-                text = permissionName,
-                style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            )
-            Text(
-                text = permissionDescription,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(horizontal = 4.dp),
-            )
-            Spacer(modifier = Modifier.requiredHeight(4.dp))
-            Text(
-                text = "To system settings",
-                textDecoration = TextDecoration.Underline,
-                style = MaterialTheme.typography.bodySmall,
+            Column(
                 modifier = Modifier
-                    .padding(horizontal = 4.dp)
-                    .clickable(role = Role.Button) {
-                        val intent = Intent().apply {
-                            action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                            data = Uri.fromParts("package", context.packageName, null)
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        context.startActivity(intent)
-                    },
-            )
+                    .padding(vertical = 4.dp)
+                    .fillMaxWidth(),
+            ) {
+                Text(
+                    text = permissionName,
+                    style = MaterialTheme.typography.headlineLarge,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+                Text(
+                    text = permissionDescription,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+                Spacer(modifier = Modifier.requiredHeight(4.dp))
+                Text(
+                    text = "To system settings",
+                    textDecoration = TextDecoration.Underline,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .clickable(role = Role.Button) {
+                            val intent = Intent().apply {
+                                action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                                data = Uri.fromParts("package", context.packageName, null)
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            context.startActivity(intent)
+                        },
+                )
+            }
         }
     }
 }
