@@ -5,9 +5,7 @@ import co.touchlab.kermit.Logger
 import de.schweizer.bft.BlueDevice
 import de.schweizer.bft.BlueManager
 import de.schweizer.bft.PermissionManager
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.coroutines.suspendCoroutine
@@ -23,21 +21,14 @@ class DeviceDiscoveryScreenModel : StateScreenModel<DeviceDiscoveryScreenModel.D
     private val _discoveredDevices: MutableStateFlow<LinkedHashSet<BlueDevice>> = MutableStateFlow(linkedSetOf())
     val discoveredDevices = _discoveredDevices.asStateFlow()
 
-    private val _requestDeniedPermissionsSignal = MutableSharedFlow<Unit>()
-    val requestDeniedPermissionsSignal = _requestDeniedPermissionsSignal.asSharedFlow()
+    suspend fun areAllPermissionsGranted(): Boolean = suspendCoroutine {
+        PermissionManager.requestPermissions(PermissionManager.deniedPermissions.value, it)
+    }
 
     suspend fun discoverDevices() {
-        val areAllPermissionsGranted = suspendCoroutine {
-            PermissionManager.requestPermissions(PermissionManager.deniedPermissions.value, it)
-        }
-
-        if (areAllPermissionsGranted) {
-            mutableState.update { DeviceDiscoveryState.Loading }
-            _discoveredDevices.update { linkedSetOf() }
-            BlueManager.discover()
-        } else {
-            _requestDeniedPermissionsSignal.emit(Unit)
-        }
+        mutableState.update { DeviceDiscoveryState.Loading }
+        _discoveredDevices.update { linkedSetOf() }
+        BlueManager.discover()
     }
 
     fun cancelDiscovery() {

@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
-import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,10 +39,10 @@ actual object PermissionManager {
         this.requestPermissionsDelegate = requestPermissionsDelegate
     }
 
-    fun updateDeniedPermissions(context: Context) {
+    fun updateDeniedPermissions() {
         val deniedPerms = mutableListOf<Permission>()
         permissions.forEach {
-            if (it.permissions.any { permission -> !isPermissionGranted(context, permission) }) {
+            if (!isPermissionGranted(it)) {
                 deniedPerms.add(it)
             }
         }

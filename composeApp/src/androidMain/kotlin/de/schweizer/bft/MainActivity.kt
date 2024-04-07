@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        PermissionManager.updateDeniedPermissions(this)
+        PermissionManager.updateDeniedPermissions()
         BlueManager.registerBluetoothBroadcastReceiver(this)
     }
 

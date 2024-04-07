@@ -40,15 +40,10 @@ class DeviceDiscoveryScreen : Screen {
         LaunchedEffect(Unit) {
             BlueManager.deviceDiscoveredSharedFlow.onEach { screenModel.onDeviceDiscovered(it) }.launchIn(this)
             BlueManager.discoveryStoppedSharedFlow.onEach { screenModel.onDiscoveryStopped() }.launchIn(this)
-
             BlueManager.isBluetoothEnabled.onEach {
                 if (it == BlueManager.BluetoothState.Disabled) {
                     navigator.push(RequestEnableBluetoothScreen())
                 }
-            }.launchIn(this)
-
-            screenModel.requestDeniedPermissionsSignal.onEach {
-                navigator.push(RequestDeniedPermissionsScreen())
             }.launchIn(this)
         }
 
@@ -57,6 +52,7 @@ class DeviceDiscoveryScreen : Screen {
 
     @Composable
     fun Content(screenModel: DeviceDiscoveryScreenModel) {
+        val navigator = LocalNavigator.currentOrThrow
         val state by screenModel.state.collectAsState()
 
         Column(
@@ -68,7 +64,13 @@ class DeviceDiscoveryScreen : Screen {
                     if (state is DeviceDiscoveryState.Loading) {
                         screenModel.cancelDiscovery()
                     } else {
-                        screenModel.screenModelScope.launch { screenModel.discoverDevices() }
+                        screenModel.screenModelScope.launch {
+                            if (screenModel.areAllPermissionsGranted()) {
+                                screenModel.discoverDevices()
+                            } else {
+                                navigator.push(RequestDeniedPermissionsScreen())
+                            }
+                        }
                     }
                 },
             ) {
