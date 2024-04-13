@@ -1,8 +1,8 @@
-use bluer::{DiscoveryFilter, Session};
+use bluer::Session;
 use lazy_static::lazy_static;
-use log::info;
 use std::sync::{Arc, OnceLock};
 use tokio::runtime::{Handle, Runtime};
+use tokio::sync::Mutex;
 
 use jni::objects::JClass;
 use jni::{JNIEnv, JavaVM};
@@ -23,45 +23,27 @@ fn rt_handle() -> Handle {
 }
 
 lazy_static! {
-    static ref BLUETOOTH_MANAGER: BlueManager = {
+    static ref BLUETOOTH_MANAGER: Mutex<BlueManager> = {
         let handle = rt_handle();
         let block = async {
             let session = Session::new()
                 .await
                 .expect("Creating bluer Session should not fail");
-            let adapter = session
-                .default_adapter()
-                .await
-                .expect("Creating bluer Adapter should not fail");
-            info!(
-                "Discovering devices using Bluetooth adapter {}\n",
-                adapter.name()
-            );
-            let filter = DiscoveryFilter {
-                transport: bluer::DiscoveryTransport::BrEdr,
-                ..Default::default()
+            let adapter = session.default_adapter().await.ok();
+            let blue_manager = BlueManager {
+                session: session,
+                adapter: adapter,
             };
-            adapter
-                .set_discovery_filter(filter)
-                .await
-                .expect("Setting bluer discovery filter should not fail");
-            info!(
-                "Using discovery filter:\n{:#?}\n\n",
-                adapter.discovery_filter().await
-            );
-
-            (session, adapter)
+            blue_manager.set_discovery_filter().await;
+            blue_manager
         };
-        let (session, adapter) = handle.block_on(block);
+        let blue_manager = handle.block_on(block);
 
-        BlueManager {
-            _session: session,
-            adapter: adapter,
-        }
+        Mutex::new(blue_manager)
     };
 }
 
-fn bt_manager() -> &'static BlueManager {
+fn bt_manager() -> &'static Mutex<BlueManager> {
     &BLUETOOTH_MANAGER
 }
 

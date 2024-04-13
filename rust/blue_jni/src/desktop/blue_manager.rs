@@ -1,9 +1,10 @@
 use std::str::FromStr;
 
-use bluer::{Adapter, AdapterEvent, Address, DeviceEvent, Session};
+use bluer::DiscoveryFilter;
+use bluer::{Adapter, AdapterEvent, Address, DeviceEvent, Session, SessionEvent};
 use futures::{pin_mut, stream::SelectAll, StreamExt};
 use lazy_static::lazy_static;
-use log::info;
+use log::{info, warn};
 use tokio::sync::{mpsc, Mutex};
 use tokio::time::{sleep, Duration};
 
@@ -16,8 +17,31 @@ use super::{bt_manager, rt_handle};
 
 #[derive(Clone, Debug)]
 pub(crate) struct BlueManager {
-    pub(crate) _session: Session,
-    pub(crate) adapter: Adapter,
+    pub(crate) session: Session,
+    pub(crate) adapter: Option<Adapter>,
+}
+
+impl BlueManager {
+    pub(crate) async fn set_discovery_filter(&self) {
+        if let Some(adapter) = &self.adapter {
+            info!(
+                "Discovering devices using Bluetooth adapter {}\n",
+                adapter.name()
+            );
+            let filter = DiscoveryFilter {
+                transport: bluer::DiscoveryTransport::BrEdr,
+                ..Default::default()
+            };
+            adapter
+                .set_discovery_filter(filter)
+                .await
+                .expect("Setting bluer discovery filter should not fail");
+            info!(
+                "Using discovery filter:\n{:#?}\n",
+                adapter.discovery_filter().await
+            );
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -52,7 +76,56 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_init<'local>(
     _obj: JObject<'local>,
 ) {
     info!("Initializing BluetoothManager");
-    drop(bt_manager().clone());
+    // Ensure BlueManager is initialized synchronously
+    bt_manager();
+
+    rt_handle().spawn(bluetooth_adapter_events());
+}
+
+async fn bluetooth_adapter_events() {
+    let manager = bt_manager().lock().await;
+    update_bluetooth_enabled(manager.adapter.is_some());
+    let session_events = manager
+        .session
+        .events()
+        .await
+        .expect("Getting bluettooth session events should not fail");
+    pin_mut!(session_events);
+    drop(manager);
+
+    loop {
+        tokio::select! {
+            Some(session_event) = session_events.next() => {
+                match session_event {
+                    SessionEvent::AdapterAdded(adapter_name) => {
+                        info!("Adapter added: {adapter_name}");
+                        let mut manager = bt_manager().lock().await;
+                        match manager.session.adapter(&adapter_name) {
+                            Ok(adapter) => {
+                                manager.adapter = Some(adapter);
+                                manager.set_discovery_filter().await;
+                                update_bluetooth_enabled(true);
+                            }
+                            Err(err) => {
+                                warn!("Error: {err}. Adapter {adapter_name} could not be retrieved");
+                                manager.adapter = None;
+                                update_bluetooth_enabled(false);
+                            }
+                        }
+                        drop(manager);
+                    }
+                    SessionEvent::AdapterRemoved(adapter) => {
+                        info!("Adapter removed: {adapter}");
+                        let mut manager = bt_manager().lock().await;
+                        manager.adapter = None;
+                        update_bluetooth_enabled(false);
+                        cancel_disocovery().await;
+                        drop(manager);
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[no_mangle]
@@ -66,20 +139,20 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_discover<'local>(
 }
 
 async fn discover_devices() {
-    let manager = bt_manager();
+    let manager = bt_manager().lock().await;
+    let adapter = if let Some(adapter) = &manager.adapter {
+        adapter
+    } else {
+        warn!("Cannot start discovery because no bluetooth adapter is available");
+        return;
+    };
 
-    manager
-        .adapter
-        .set_powered(true)
-        .await
-        .expect("Turning on bluetooth should not fail");
-
-    let device_events = manager
-        .adapter
+    let device_events = adapter
         .discover_devices()
         .await
         .expect("Discovering devices should not fail");
     pin_mut!(device_events);
+    drop(manager);
 
     let mut all_change_events = SelectAll::new();
 
@@ -95,7 +168,11 @@ async fn discover_devices() {
             Some(device_event) = device_events.next() => {
                     match device_event {
                         AdapterEvent::DeviceAdded(addr) => {
-                            let device = manager.adapter.device(addr).expect("Getting device should not fail");
+                            let manager = bt_manager().lock().await;
+                            let adapter = manager.adapter.as_ref().unwrap();
+                            let device = adapter.device(addr).expect("Getting device should not fail");
+                            drop(manager);
+
                             let device_name = device.name().await.expect("Getting device name should not fail").unwrap_or(addr.to_string());
                             let addr_str = addr.to_string();
                             info!("Device ({}) with address: {} added", device_name, addr_str);
@@ -140,19 +217,29 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_connectToDevice<'local>
     _obj: JObject<'local>,
     device_addr: JString<'local>,
 ) {
-    let manager = bt_manager();
+    info!("BlueManager::connectToDevice()");
 
-    // TODO: Use executor
     let device_addr: String = env
         .get_string(&device_addr)
         .expect("Getting String from env should not fail")
         .into();
     let device_addr = Address::from_str(&device_addr).unwrap();
+    rt_handle().spawn(connect_to_device(device_addr));
+}
 
-    let device = manager
-        .adapter
-        .device(device_addr)
+async fn connect_to_device(device_address: Address) {
+    let manager = bt_manager().lock().await;
+    let adapter = if let Some(adapter) = &manager.adapter {
+        adapter
+    } else {
+        warn!("Cannot connect to device because no bluetooth adapter is available");
+        return;
+    };
+
+    let device = adapter
+        .device(device_address)
         .expect("Device should still be available from adapter");
+    drop(manager);
 
     let block = async {
         let props = device.all_properties().await.unwrap();
@@ -170,12 +257,44 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_cancelDiscovery<'local>
     _env: JNIEnv<'local>,
     _obj: JObject<'local>,
 ) {
-    rt_handle().spawn(async {
-        let state = BLUE_STATE.lock().await;
-        if let Some(cancel) = &state.cancel {
-            let _ = cancel.send(()).await;
-        }
-    });
+    info!("BlueManager::cancelDiscovery()");
+
+    rt_handle().spawn(cancel_disocovery());
+}
+
+async fn cancel_disocovery() {
+    let state = BLUE_STATE.lock().await;
+    if let Some(cancel) = &state.cancel {
+        let _ = cancel.send(()).await;
+    }
+}
+
+#[no_mangle]
+pub extern "system" fn Java_de_schweizer_bft_BlueManager_requestEnableBluetooth<'local>(
+    _env: JNIEnv<'local>,
+    _obj: JObject<'local>,
+) {
+    info!("BlueManager::requestEnableBluetooth()");
+
+    rt_handle().spawn(request_enable_bluetooth());
+}
+
+async fn request_enable_bluetooth() {
+    let manager = bt_manager().lock().await;
+    let adapter = if let Some(adapter) = &manager.adapter {
+        adapter
+    } else {
+        warn!("Cannot enable bluetooth because no bluetooth adapter is available");
+        return;
+    };
+
+    adapter
+        .set_powered(true)
+        .await
+        .expect("Turning on bluetooth should not fail");
+    drop(manager);
+
+    update_bluetooth_enabled(true)
 }
 
 async fn sleep_and_notify(duration: Duration) {
@@ -222,4 +341,22 @@ async fn discovery_stopped() {
     });
 
     *BLUE_STATE.lock().await = BlueState::reset();
+}
+
+fn update_bluetooth_enabled(enabled: bool) {
+    let exec = Executor::new(GLOBAL_JVM.get().unwrap().clone());
+    let _ = exec.with_attached(|env| {
+        let blue_manager_cls = env
+            .find_class("de/schweizer/bft/BlueManager")
+            .expect("BlueManger could not be found");
+
+        env.call_static_method(
+            blue_manager_cls,
+            "updateBluetoothEnabled",
+            "(Z)V",
+            &[JValue::from(enabled)],
+        )
+        .unwrap()
+        .v()
+    });
 }

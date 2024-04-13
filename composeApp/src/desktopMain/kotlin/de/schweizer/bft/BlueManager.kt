@@ -19,7 +19,7 @@ actual object BlueManager {
         Disabled,
     }
 
-    private val _isBluetoothEnabled = MutableStateFlow(BluetoothState.Enabled)
+    private val _isBluetoothEnabled = MutableStateFlow(BluetoothState.Disabled)
     actual val isBluetoothEnabled = _isBluetoothEnabled.asStateFlow()
 
     actual external fun init()
