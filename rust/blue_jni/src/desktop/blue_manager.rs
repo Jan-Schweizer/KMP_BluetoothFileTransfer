@@ -10,6 +10,7 @@ use tokio::time::{sleep, Duration};
 
 use jni::objects::{JObject, JString, JValue};
 use jni::{Executor, JNIEnv};
+use util::CommandConfig;
 
 use crate::desktop::GLOBAL_JVM;
 
@@ -51,23 +52,23 @@ struct BlueState {
 }
 
 impl BlueState {
-    fn new(timeout: mpsc::Sender<()>, cancel: mpsc::Sender<()>) -> Self {
-        Self {
-            timeout: Some(timeout),
-            cancel: Some(cancel),
-        }
-    }
-
-    fn reset() -> Self {
+    fn new() -> Self {
         Self {
             timeout: None,
             cancel: None,
         }
     }
+
+    fn set(timeout: mpsc::Sender<()>, cancel: mpsc::Sender<()>) -> Self {
+        Self {
+            timeout: Some(timeout),
+            cancel: Some(cancel),
+        }
+    }
 }
 
 lazy_static! {
-    static ref BLUE_STATE: Mutex<BlueState> = Mutex::new(BlueState::reset());
+    static ref BLUE_STATE: Mutex<BlueState> = Mutex::new(BlueState::new());
 }
 
 #[no_mangle]
@@ -79,12 +80,16 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_init<'local>(
     // Ensure BlueManager is initialized synchronously
     bt_manager();
 
+    rt_handle().block_on(async {
+        let manager = bt_manager().lock().await;
+        update_bluetooth_enabled(manager.adapter.is_some());
+    });
+
     rt_handle().spawn(bluetooth_adapter_events());
 }
 
 async fn bluetooth_adapter_events() {
     let manager = bt_manager().lock().await;
-    update_bluetooth_enabled(manager.adapter.is_some());
     let session_events = manager
         .session
         .events()
@@ -96,10 +101,10 @@ async fn bluetooth_adapter_events() {
     loop {
         tokio::select! {
             Some(session_event) = session_events.next() => {
+                let mut manager = bt_manager().lock().await;
                 match session_event {
                     SessionEvent::AdapterAdded(adapter_name) => {
                         info!("Adapter added: {adapter_name}");
-                        let mut manager = bt_manager().lock().await;
                         match manager.session.adapter(&adapter_name) {
                             Ok(adapter) => {
                                 manager.adapter = Some(adapter);
@@ -112,17 +117,15 @@ async fn bluetooth_adapter_events() {
                                 update_bluetooth_enabled(false);
                             }
                         }
-                        drop(manager);
                     }
                     SessionEvent::AdapterRemoved(adapter) => {
                         info!("Adapter removed: {adapter}");
-                        let mut manager = bt_manager().lock().await;
                         manager.adapter = None;
                         update_bluetooth_enabled(false);
                         cancel_disocovery().await;
-                        drop(manager);
                     }
                 }
+                drop(manager);
             }
         }
     }
@@ -158,7 +161,7 @@ async fn discover_devices() {
 
     let (timeout_tx, mut timeout_rx) = mpsc::channel(1);
     let (cancel_tx, mut cancel_rx) = mpsc::channel(1);
-    *BLUE_STATE.lock().await = BlueState::new(timeout_tx, cancel_tx);
+    *BLUE_STATE.lock().await = BlueState::set(timeout_tx, cancel_tx);
 
     let duration = Duration::from_secs(12);
     let timeout_task = tokio::spawn(sleep_and_notify(duration));
@@ -276,25 +279,15 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_requestEnableBluetooth<
 ) {
     info!("BlueManager::requestEnableBluetooth()");
 
-    rt_handle().spawn(request_enable_bluetooth());
+    request_enable_bluetooth();
 }
 
-async fn request_enable_bluetooth() {
-    let manager = bt_manager().lock().await;
-    let adapter = if let Some(adapter) = &manager.adapter {
-        adapter
-    } else {
-        warn!("Cannot enable bluetooth because no bluetooth adapter is available");
-        return;
+fn request_enable_bluetooth() {
+    let command = CommandConfig {
+        command: "rfkill",
+        args: vec!["toggle", "bluetooth"],
     };
-
-    adapter
-        .set_powered(true)
-        .await
-        .expect("Turning on bluetooth should not fail");
-    drop(manager);
-
-    update_bluetooth_enabled(true)
+    util::run_command(&command);
 }
 
 async fn sleep_and_notify(duration: Duration) {
@@ -340,7 +333,7 @@ async fn discovery_stopped() {
             .v()
     });
 
-    *BLUE_STATE.lock().await = BlueState::reset();
+    *BLUE_STATE.lock().await = BlueState::new();
 }
 
 fn update_bluetooth_enabled(enabled: bool) {

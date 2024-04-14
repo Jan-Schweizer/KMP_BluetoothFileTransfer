@@ -3,6 +3,7 @@ package de.schweizer.bft.ui
 import cafe.adriel.voyager.core.model.StateScreenModel
 import co.touchlab.kermit.Logger
 import de.schweizer.bft.BlueDevice
+import de.schweizer.bft.BlueError
 import de.schweizer.bft.BlueManager
 import de.schweizer.bft.PermissionManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,7 @@ class DeviceDiscoveryScreenModel : StateScreenModel<DeviceDiscoveryScreenModel.D
     sealed class DeviceDiscoveryState {
         data object Init : DeviceDiscoveryState()
         data object Loading : DeviceDiscoveryState()
-        data class Error(val error: String) : DeviceDiscoveryState()
+        data class Error(val error: BlueError) : DeviceDiscoveryState()
     }
 
     private val _discoveredDevices: MutableStateFlow<LinkedHashSet<BlueDevice>> = MutableStateFlow(linkedSetOf())
@@ -45,7 +46,7 @@ class DeviceDiscoveryScreenModel : StateScreenModel<DeviceDiscoveryScreenModel.D
         mutableState.update { DeviceDiscoveryState.Init }
     }
 
-    fun errorHandler(error: String) {
+    fun onError(error: BlueError) {
         Logger.i { "Error: $error" }
         mutableState.update { DeviceDiscoveryState.Error(error) }
     }

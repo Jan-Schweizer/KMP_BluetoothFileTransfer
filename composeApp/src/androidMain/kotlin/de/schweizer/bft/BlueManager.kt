@@ -28,6 +28,9 @@ actual object BlueManager {
     private val _discoveryStoppedSharedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     actual val discoveryStoppedSharedFlow = _discoveryStoppedSharedFlow.asSharedFlow()
 
+    private val _errorSharedFlow = MutableSharedFlow<BlueError>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    actual val errorSharedFlow = _errorSharedFlow.asSharedFlow()
+
     actual enum class BluetoothState {
         Enabled,
         Disabled,
@@ -79,6 +82,11 @@ actual object BlueManager {
     actual fun onDeviceDiscovered(deviceName: String, deviceAddress: String) {
         _deviceDiscoveredSharedFlow.tryEmit(BlueDevice(deviceName, deviceAddress))
         Logger.i { "BlueManager::onDeviceDiscovered(): deviceName=$deviceName, deviceAddress=$deviceAddress" }
+    }
+
+    actual fun onError(error: BlueError) {
+        _errorSharedFlow.tryEmit(error)
+        Logger.i { "BlueManager::onError: $error" }
     }
 
     init {

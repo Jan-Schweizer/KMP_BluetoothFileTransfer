@@ -40,6 +40,7 @@ class DeviceDiscoveryScreen : Screen {
         LaunchedEffect(Unit) {
             BlueManager.deviceDiscoveredSharedFlow.onEach { screenModel.onDeviceDiscovered(it) }.launchIn(this)
             BlueManager.discoveryStoppedSharedFlow.onEach { screenModel.onDiscoveryStopped() }.launchIn(this)
+            BlueManager.errorSharedFlow.onEach { screenModel.onError(it) }.launchIn(this)
             BlueManager.isBluetoothEnabled.onEach {
                 if (it == BlueManager.BluetoothState.Disabled) {
                     navigator.push(RequestEnableBluetoothScreen())
@@ -101,7 +102,7 @@ class DeviceDiscoveryScreen : Screen {
                         }
                     }
                 }
-                is DeviceDiscoveryState.Error -> Text(s.error)
+                is DeviceDiscoveryState.Error -> Text(s.error.msg)
             }
         }
     }

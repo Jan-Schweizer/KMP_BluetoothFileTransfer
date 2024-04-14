@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 expect object BlueManager {
     val deviceDiscoveredSharedFlow: SharedFlow<BlueDevice>
     val discoveryStoppedSharedFlow: SharedFlow<Unit>
+    val errorSharedFlow: SharedFlow<BlueError>
 
     enum class BluetoothState {
         Enabled,
@@ -22,4 +23,5 @@ expect object BlueManager {
     fun cancelDiscovery()
     fun onDiscoveryStopped()
     fun onDeviceDiscovered(deviceName: String, deviceAddress: String)
+    fun onError(error: BlueError)
 }
