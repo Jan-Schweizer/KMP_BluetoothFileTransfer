@@ -71,6 +71,10 @@ lazy_static! {
     static ref BLUE_STATE: Mutex<BlueState> = Mutex::new(BlueState::new());
 }
 
+lazy_static! {
+    static ref IS_BLUETOOTH_ENABLING: Mutex<bool> = Mutex::new(false);
+}
+
 #[no_mangle]
 pub extern "system" fn Java_de_schweizer_bft_BlueManager_init<'local>(
     _env: JNIEnv<'local>,
@@ -279,7 +283,14 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_requestEnableBluetooth<
 ) {
     info!("BlueManager::requestEnableBluetooth()");
 
-    request_enable_bluetooth();
+    let mut is_bluetooth_enabling = rt_handle().block_on(async {
+        return IS_BLUETOOTH_ENABLING.lock().await;
+    });
+
+    if !*is_bluetooth_enabling {
+        *is_bluetooth_enabling = true;
+        request_enable_bluetooth();
+    }
 }
 
 fn request_enable_bluetooth() {
@@ -351,5 +362,9 @@ fn update_bluetooth_enabled(enabled: bool) {
         )
         .unwrap()
         .v()
+    });
+
+    rt_handle().spawn(async {
+        *IS_BLUETOOTH_ENABLING.lock().await = false;
     });
 }
