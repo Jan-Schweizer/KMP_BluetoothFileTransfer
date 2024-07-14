@@ -4,7 +4,7 @@ use bluer::DiscoveryFilter;
 use bluer::{Adapter, AdapterEvent, Address, DeviceEvent, Session, SessionEvent};
 use futures::{pin_mut, stream::SelectAll, StreamExt};
 use lazy_static::lazy_static;
-use log::{info, warn};
+use log::{error, info, warn};
 use tokio::sync::{mpsc, Mutex};
 use tokio::time::{sleep, Duration};
 
@@ -12,6 +12,7 @@ use jni::objects::{JObject, JString, JValue};
 use jni::{Executor, JNIEnv};
 use util::CommandConfig;
 
+use crate::desktop::error::{on_error, Error, Result};
 use crate::desktop::GLOBAL_JVM;
 
 use super::{bt_manager, rt_handle};
@@ -23,7 +24,7 @@ pub(crate) struct BlueManager {
 }
 
 impl BlueManager {
-    pub(crate) async fn set_discovery_filter(&self) {
+    pub(crate) async fn set_discovery_filter(&self) -> Result<()> {
         if let Some(adapter) = &self.adapter {
             info!(
                 "Discovering devices using Bluetooth adapter {}\n",
@@ -33,15 +34,14 @@ impl BlueManager {
                 transport: bluer::DiscoveryTransport::BrEdr,
                 ..Default::default()
             };
-            adapter
-                .set_discovery_filter(filter)
-                .await
-                .expect("Setting bluer discovery filter should not fail");
+            adapter.set_discovery_filter(filter).await?;
+
             info!(
                 "Using discovery filter:\n{:#?}\n",
                 adapter.discovery_filter().await
             );
         }
+        Ok(())
     }
 }
 
@@ -112,7 +112,9 @@ async fn bluetooth_adapter_events() {
                         match manager.session.adapter(&adapter_name) {
                             Ok(adapter) => {
                                 manager.adapter = Some(adapter);
-                                manager.set_discovery_filter().await;
+                                manager.set_discovery_filter()
+                                .await
+                                .unwrap_or_else(|_| error!("Could not set discovery filter"));
                                 update_bluetooth_enabled(true);
                             }
                             Err(err) => {
@@ -142,22 +144,19 @@ pub extern "system" fn Java_de_schweizer_bft_BlueManager_discover<'local>(
 ) {
     info!("BlueManager::discover()");
 
-    rt_handle().spawn(discover_devices());
+    rt_handle().spawn(async {
+        discover_devices().await.map_err(|err| on_error(err)).ok();
+    });
 }
 
-async fn discover_devices() {
+async fn discover_devices() -> Result<()> {
     let manager = bt_manager().lock().await;
-    let adapter = if let Some(adapter) = &manager.adapter {
-        adapter
-    } else {
-        warn!("Cannot start discovery because no bluetooth adapter is available");
-        return;
-    };
+    let adapter = manager.adapter.as_ref().ok_or(Error::AdapterNotAvailable)?;
 
     let device_events = adapter
         .discover_devices()
         .await
-        .expect("Discovering devices should not fail");
+        .map_err(|_| Error::DiscoveryNotPossible)?;
     pin_mut!(device_events);
     drop(manager);
 
@@ -202,17 +201,17 @@ async fn discover_devices() {
             Some(()) = timeout_rx.recv() => {
                 info!("Timeout reached, ending discovery");
                 discovery_stopped().await;
-                break;
+                return Ok(());
             }
             Some(()) = cancel_rx.recv() => {
                 info!("Canceling Discovery");
                 discovery_stopped().await;
                 timeout_task.abort();
-                break;
+                return Ok(());
             }
             else => {
                 info!("tokio::select! => else");
-                break;
+                return Ok(());
             }
         }
     }

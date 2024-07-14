@@ -14,3 +14,5 @@ ktlint_standard_if-else-wrapping = disabled
 ktlint_standard_multiline-if-else = disabled
 ktlint_standard_value-argument-comment = disabled
 ktlint_standard_value-parameter-comment = disabled
+ktlint_standard_chain-method-continuation = disabled
+ktlint_standard_class-signature = disabled

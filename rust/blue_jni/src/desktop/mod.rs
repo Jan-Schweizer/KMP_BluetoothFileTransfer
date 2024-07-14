@@ -1,5 +1,6 @@
 use bluer::Session;
 use lazy_static::lazy_static;
+use log::error;
 use std::sync::{Arc, OnceLock};
 use tokio::runtime::{Handle, Runtime};
 use tokio::sync::Mutex;
@@ -10,6 +11,7 @@ use jni::{JNIEnv, JavaVM};
 use crate::desktop::blue_manager::BlueManager;
 
 mod blue_manager;
+mod error;
 mod logger;
 
 static GLOBAL_JVM: OnceLock<Arc<JavaVM>> = OnceLock::new();
@@ -34,7 +36,10 @@ lazy_static! {
                 session: session,
                 adapter: adapter,
             };
-            blue_manager.set_discovery_filter().await;
+            blue_manager
+                .set_discovery_filter()
+                .await
+                .unwrap_or_else(|_| error!("Could not set discovery filter"));
             blue_manager
         };
         let blue_manager = handle.block_on(block);
