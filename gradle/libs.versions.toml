@@ -1,22 +1,22 @@
 [versions]
-compose = "1.6.7"
-compose-plugin = "1.5.10"
-compose-compiler = "1.5.9"
-agp = "8.2.0"
+compose = "1.6.8"
+compose-plugin = "1.6.11"
+compose-compiler = "1.5.15"
+agp = "8.5.2"
 android-minSdk = "29"
 android-compileSdk = "34"
 android-targetSdk = "34"
-androidx-activityCompose = "1.9.0"
+androidx-activityCompose = "1.9.1"
 androidx-core-ktx = "1.13.1"
 androidx-appcompat = "1.7.0"
 androidx-material = "1.12.0"
 androidx-constraintlayout = "2.1.4"
-androidx-test-junit = "1.1.5"
-androidx-espresso-core = "3.5.1"
-androidx-fragmentKtx = "1.7.1"
+androidx-test-junit = "1.2.1"
+androidx-espresso-core = "3.6.1"
+androidx-fragmentKtx = "1.8.2"
 kermit = "2.0.2"
-kotlin = "1.9.20"
-kotlin-coroutines = "1.7.3"
+kotlin = "2.0.20"
+kotlin-coroutines = "1.8.0"
 junit = "4.13.2"
 voyager = "1.0.0"
 
@@ -29,12 +29,12 @@ kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-co
 kotlin-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlin-coroutines" }
 voyager-navigator = { module = "cafe.adriel.voyager:voyager-navigator", version.ref = "voyager" }
 voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", version.ref = "voyager" }
-voyager-screenmodel = { module = "cafe.adriel.voyager:voyager-screenmodel", version.ref = "voyager" }
 
 # ----- Compose -----
 compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
+compose-viewmodel = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0"
 
 # ----- AndroidX -----
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }
@@ -51,3 +51,4 @@ jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-plugin
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

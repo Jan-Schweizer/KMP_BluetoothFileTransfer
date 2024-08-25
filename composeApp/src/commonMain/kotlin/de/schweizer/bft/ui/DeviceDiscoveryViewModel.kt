@@ -1,17 +1,20 @@
 package de.schweizer.bft.ui
 
-import cafe.adriel.voyager.core.model.StateScreenModel
+import androidx.lifecycle.ViewModel
 import co.touchlab.kermit.Logger
 import de.schweizer.bft.BlueDevice
 import de.schweizer.bft.BlueError
 import de.schweizer.bft.BlueManager
 import de.schweizer.bft.PermissionManager
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.coroutines.suspendCoroutine
 
-class DeviceDiscoveryScreenModel : StateScreenModel<DeviceDiscoveryScreenModel.DeviceDiscoveryState>(DeviceDiscoveryState.Init) {
+class DeviceDiscoveryViewModel : ViewModel() {
+    private val _uiState = MutableStateFlow<DeviceDiscoveryState>(DeviceDiscoveryState.Init)
+    val uiState: StateFlow<DeviceDiscoveryState> = _uiState.asStateFlow()
 
     sealed class DeviceDiscoveryState {
         data object Init : DeviceDiscoveryState()
@@ -27,7 +30,7 @@ class DeviceDiscoveryScreenModel : StateScreenModel<DeviceDiscoveryScreenModel.D
     }
 
     suspend fun discoverDevices() {
-        mutableState.update { DeviceDiscoveryState.Loading }
+        _uiState.update { DeviceDiscoveryState.Loading }
         _discoveredDevices.update { linkedSetOf() }
         BlueManager.discover()
     }
@@ -43,12 +46,12 @@ class DeviceDiscoveryScreenModel : StateScreenModel<DeviceDiscoveryScreenModel.D
     }
 
     fun onDiscoveryStopped() {
-        mutableState.update { DeviceDiscoveryState.Init }
+        _uiState.update { DeviceDiscoveryState.Init }
     }
 
     fun onError(error: BlueError) {
         Logger.i { "Error: $error" }
-        mutableState.update { DeviceDiscoveryState.Error(error) }
+        _uiState.update { DeviceDiscoveryState.Error(error) }
     }
 
     suspend fun connectToDevice(name: String) {

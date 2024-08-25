@@ -1,26 +1,20 @@
-import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.compose.compiler)
 }
 
 kotlin {
     androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "1.8"
-            }
-        }
-
-        targets.all {
-            compilations.all {
-                compilerOptions.configure {
-                    freeCompilerArgs.add("-Xexpect-actual-classes")
-                }
-            }
+        @OptIn(ExperimentalKotlinGradlePluginApi::class)
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_1_8)
+            freeCompilerArgs.add("-Xexpect-actual-classes")
         }
     }
 
@@ -44,12 +38,11 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
-            @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.components.resources)
             implementation(libs.kermit)
             implementation(libs.voyager.navigator)
             implementation(libs.voyager.transitions)
-            implementation(libs.voyager.screenmodel)
+            implementation(libs.compose.viewmodel)
         }
     }
 }

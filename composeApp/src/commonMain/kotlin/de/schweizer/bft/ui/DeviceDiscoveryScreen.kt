@@ -20,13 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import de.schweizer.bft.BlueManager
-import de.schweizer.bft.ui.DeviceDiscoveryScreenModel.DeviceDiscoveryState
+import de.schweizer.bft.ui.DeviceDiscoveryViewModel.DeviceDiscoveryState
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -34,13 +34,13 @@ import kotlinx.coroutines.launch
 class DeviceDiscoveryScreen : Screen {
     @Composable
     override fun Content() {
-        val screenModel = rememberScreenModel { DeviceDiscoveryScreenModel() }
+        val viewModel = viewModel { DeviceDiscoveryViewModel() }
         val navigator = LocalNavigator.currentOrThrow
 
         LaunchedEffect(Unit) {
-            BlueManager.deviceDiscoveredSharedFlow.onEach { screenModel.onDeviceDiscovered(it) }.launchIn(this)
-            BlueManager.discoveryStoppedSharedFlow.onEach { screenModel.onDiscoveryStopped() }.launchIn(this)
-            BlueManager.errorSharedFlow.onEach { screenModel.onError(it) }.launchIn(this)
+            BlueManager.deviceDiscoveredSharedFlow.onEach { viewModel.onDeviceDiscovered(it) }.launchIn(this)
+            BlueManager.discoveryStoppedSharedFlow.onEach { viewModel.onDiscoveryStopped() }.launchIn(this)
+            BlueManager.errorSharedFlow.onEach { viewModel.onError(it) }.launchIn(this)
             BlueManager.isBluetoothEnabled.onEach {
                 if (it == BlueManager.BluetoothState.Disabled) {
                     navigator.push(RequestEnableBluetoothScreen())
@@ -48,13 +48,13 @@ class DeviceDiscoveryScreen : Screen {
             }.launchIn(this)
         }
 
-        Content(screenModel)
+        Content(viewModel)
     }
 
     @Composable
-    fun Content(screenModel: DeviceDiscoveryScreenModel) {
+    fun Content(viewModel: DeviceDiscoveryViewModel) {
         val navigator = LocalNavigator.currentOrThrow
-        val state by screenModel.state.collectAsState()
+        val state by viewModel.uiState.collectAsState()
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -63,11 +63,11 @@ class DeviceDiscoveryScreen : Screen {
             Button(
                 onClick = {
                     if (state is DeviceDiscoveryState.Loading) {
-                        screenModel.cancelDiscovery()
+                        viewModel.cancelDiscovery()
                     } else {
-                        screenModel.screenModelScope.launch {
-                            if (screenModel.areAllPermissionsGranted()) {
-                                screenModel.discoverDevices()
+                        viewModel.viewModelScope.launch {
+                            if (viewModel.areAllPermissionsGranted()) {
+                                viewModel.discoverDevices()
                             } else {
                                 navigator.push(RequestDeniedPermissionsScreen())
                             }
@@ -87,7 +87,7 @@ class DeviceDiscoveryScreen : Screen {
 
             Spacer(modifier = Modifier.requiredHeight(16.dp))
 
-            val discoveredDevices by screenModel.discoveredDevices.collectAsState()
+            val discoveredDevices by viewModel.discoveredDevices.collectAsState()
 
             when (val s = state) {
                 DeviceDiscoveryState.Init,
@@ -96,7 +96,7 @@ class DeviceDiscoveryScreen : Screen {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         discoveredDevices.forEach { (name, addr) ->
                             key(addr) {
-                                BluetoothDevice(name, addr, screenModel)
+                                BluetoothDevice(name, addr, viewModel)
                                 Spacer(modifier = Modifier.requiredHeight(16.dp))
                             }
                         }
@@ -108,12 +108,12 @@ class DeviceDiscoveryScreen : Screen {
     }
 
     @Composable
-    private fun BluetoothDevice(name: String, addr: String, screenModel: DeviceDiscoveryScreenModel) {
+    private fun BluetoothDevice(name: String, addr: String, viewModel: DeviceDiscoveryViewModel) {
         Box(
             modifier = Modifier
                 .border(BorderStroke(2.dp, Color.Red))
                 .clickable(role = Role.Button) {
-                    screenModel.screenModelScope.launch { screenModel.connectToDevice(addr) }
+                    viewModel.viewModelScope.launch { viewModel.connectToDevice(addr) }
                 },
         ) {
             Text(name)
