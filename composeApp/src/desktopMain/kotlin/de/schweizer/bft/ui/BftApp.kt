@@ -11,7 +11,7 @@ class BftApp {
 
     @Composable
     fun run() {
-        Navigator(DeviceDiscoveryScreen())
+        Navigator(HomeScreen())
     }
 
     companion object {

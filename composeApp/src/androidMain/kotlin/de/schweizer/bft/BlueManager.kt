@@ -37,7 +37,7 @@ actual object BlueManager {
     }
 
     private val _isBluetoothEnabled = MutableStateFlow(BluetoothState.Disabled)
-    actual val isBluetoothEnabled = _isBluetoothEnabled.asStateFlow()
+    actual val bluetoothState = _isBluetoothEnabled.asStateFlow()
 
     private fun updateBluetoothEnabled() = _isBluetoothEnabled.update {
         when (bluetoothAdapter.isEnabled) {

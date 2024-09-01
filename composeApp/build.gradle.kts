@@ -14,6 +14,10 @@ kotlin {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_1_8)
+        }
+
+        @OptIn(ExperimentalKotlinGradlePluginApi::class)
+        compilerOptions {
             freeCompilerArgs.add("-Xexpect-actual-classes")
         }
     }
@@ -34,6 +38,7 @@ kotlin {
             implementation(libs.kotlin.coroutines.swing)
         }
         commonMain.dependencies {
+            implementation(compose.components.resources)
             implementation(libs.kotlin.coroutines.core)
             implementation(compose.runtime)
             implementation(compose.foundation)

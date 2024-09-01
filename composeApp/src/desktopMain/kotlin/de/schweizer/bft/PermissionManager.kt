@@ -16,5 +16,6 @@ actual object PermissionManager {
     actual fun requestPermissions(permissions: List<Permission>, continuation: Continuation<Boolean>) {
         continuation.resume(true)
     }
+
     actual fun isPermissionGranted(permission: Permission): Boolean = true
 }

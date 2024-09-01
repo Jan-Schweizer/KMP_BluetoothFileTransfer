@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +30,8 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import de.schweizer.bft.BlueManager
 import de.schweizer.bft.ui.DeviceDiscoveryViewModel.DeviceDiscoveryState
+import de.schweizer.bft.ui.theme.Spacings
+import de.schweizer.bft.ui.theme.VerticalSpacerM
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -35,20 +40,27 @@ class DeviceDiscoveryScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel = viewModel { DeviceDiscoveryViewModel() }
-        val navigator = LocalNavigator.currentOrThrow
 
-        LaunchedEffect(Unit) {
-            BlueManager.deviceDiscoveredSharedFlow.onEach { viewModel.onDeviceDiscovered(it) }.launchIn(this)
-            BlueManager.discoveryStoppedSharedFlow.onEach { viewModel.onDiscoveryStopped() }.launchIn(this)
-            BlueManager.errorSharedFlow.onEach { viewModel.onError(it) }.launchIn(this)
-            BlueManager.isBluetoothEnabled.onEach {
-                if (it == BlueManager.BluetoothState.Disabled) {
-                    navigator.push(RequestEnableBluetoothScreen())
-                }
-            }.launchIn(this)
+        Toolbar(title = "Device Discovery Screen", onBack = {
+            viewModel.cancelDiscovery() // TODO: Cancel receiving of files
+        }) {
+            val navigator = LocalNavigator.currentOrThrow
+
+            LaunchedEffect(Unit) {
+                BlueManager.deviceDiscoveredSharedFlow.onEach { viewModel.onDeviceDiscovered(it) }.launchIn(this)
+                BlueManager.discoveryStoppedSharedFlow.onEach { viewModel.onDiscoveryStopped() }.launchIn(this)
+                BlueManager.errorSharedFlow.onEach { viewModel.onError(it) }.launchIn(this)
+                BlueManager.bluetoothState.onEach {
+                    if (it == BlueManager.BluetoothState.Disabled) {
+                        // TODO: Cancel any ongoing file transfers
+                        viewModel.cancelDiscovery()
+                        navigator.pop()
+                    }
+                }.launchIn(this)
+            }
+
+            Content(viewModel)
         }
-
-        Content(viewModel)
     }
 
     @Composable
@@ -58,8 +70,13 @@ class DeviceDiscoveryScreen : Screen {
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = Spacings.m),
         ) {
+            Text("Start by discovering a device that you want to share a file with")
+
+            // TODO: Remove permission handling here (permissions are handled before reaching this screen)
             Button(
                 onClick = {
                     if (state is DeviceDiscoveryState.Loading) {
@@ -79,13 +96,13 @@ class DeviceDiscoveryScreen : Screen {
                 Text(text)
             }
 
-            Spacer(modifier = Modifier.requiredHeight(16.dp))
+            VerticalSpacerM()
 
             if (state is DeviceDiscoveryState.Loading) {
                 Text("Discovering Devices ...")
             }
 
-            Spacer(modifier = Modifier.requiredHeight(16.dp))
+            VerticalSpacerM()
 
             val discoveredDevices by viewModel.discoveredDevices.collectAsState()
 
@@ -93,7 +110,12 @@ class DeviceDiscoveryScreen : Screen {
                 DeviceDiscoveryState.Init,
                 DeviceDiscoveryState.Loading,
                 -> if (discoveredDevices.isNotEmpty()) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
                         discoveredDevices.forEach { (name, addr) ->
                             key(addr) {
                                 BluetoothDevice(name, addr, viewModel)
@@ -102,6 +124,7 @@ class DeviceDiscoveryScreen : Screen {
                         }
                     }
                 }
+
                 is DeviceDiscoveryState.Error -> Text(s.error.msg)
             }
         }

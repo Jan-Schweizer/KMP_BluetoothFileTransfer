@@ -13,7 +13,7 @@ expect object BlueManager {
         Disabled,
     }
 
-    val isBluetoothEnabled: StateFlow<BluetoothState>
+    val bluetoothState: StateFlow<BluetoothState>
 
     fun requestEnableBluetooth()
 

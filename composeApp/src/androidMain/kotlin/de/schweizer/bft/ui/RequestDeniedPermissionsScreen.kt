@@ -35,31 +35,33 @@ import kotlinx.coroutines.flow.onEach
 actual class RequestDeniedPermissionsScreen : Screen {
     @Composable
     override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
+        Toolbar(title = "Request Necessary Permissions", onBack = {}) {
+            val navigator = LocalNavigator.currentOrThrow
 
-        LaunchedEffect(Unit) {
-            PermissionManager.deniedPermissions.onEach {
-                if (it.isEmpty()) {
-                    navigator.pop()
+            LaunchedEffect(Unit) {
+                PermissionManager.deniedPermissions.onEach {
+                    if (it.isEmpty()) {
+                        navigator.pop()
+                    }
+                }.launchIn(this)
+            }
+
+            val deniedPermissions by PermissionManager.deniedPermissions.collectAsState()
+
+            if (deniedPermissions.isNotEmpty()) {
+                val nextDeniedPermission = deniedPermissions.first()
+
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    val (permissionName, permissionDescription) = when (nextDeniedPermission) {
+                        PermissionManager.Permission.Bluetooth -> "Nearby Devices" to "Please allow nearby devices access for this app"
+                        PermissionManager.Permission.BackgroundLocation -> "Background Location" to "Please enable Background Location all the time"
+                    }
+                    DeniedPermission(permissionName, permissionDescription)
                 }
-            }.launchIn(this)
-        }
-
-        val deniedPermissions by PermissionManager.deniedPermissions.collectAsState()
-
-        if (deniedPermissions.isNotEmpty()) {
-            val nextDeniedPermission = deniedPermissions.first()
-
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                val (permissionName, permissionDescription) = when (nextDeniedPermission) {
-                    PermissionManager.Permission.Bluetooth -> "Bluetooth " to "Please provide access to Bluetooth"
-                    PermissionManager.Permission.BackgroundLocation -> "Background Location" to "Please enable Background Location all the time"
-                }
-                DeniedPermission(permissionName, permissionDescription)
             }
         }
     }
@@ -68,6 +70,7 @@ actual class RequestDeniedPermissionsScreen : Screen {
     private fun DeniedPermission(permissionName: String, permissionDescription: String) {
         val context = LocalContext.current
 
+        // TODO: First request permission before directing the user to the app settings
         Box(
             modifier = Modifier
                 .fillMaxWidth()
